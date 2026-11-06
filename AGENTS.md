@@ -7,10 +7,17 @@ For initial setup, follow `start.md` and `docs/agent-setup.md`. Node is optional
 use the script when available, or apply a reviewed agent-led merge from the
 locked host blueprints and satisfy the same DoD. Preserve opt-outs, clean owned
 staging, and finish with creation/migration prompt examples. Do not install
-assets merely to maintain this distribution or duplicate an enabled plugin.
+assets merely to maintain this distribution or duplicate an enabled installation
+of this starter. A different Azure Functions plugin is not this installation.
+Setup is configuration, not app authoring: do not invoke another plugin's
+same-named Hosted Skills skill to perform it. Open
+azure-functions-hosted-skills-canvas only when the user explicitly asks to open
+that canvas; a Hosted Skills or scheduled-agent request alone is not consent.
 
 Canonical skills live in `plugin/skills`; the local updater source is
-`skills/skills-update/SKILL.md`. Use `azure-functions-hosted-skills` for app
+`skills/skills-update/SKILL.md`. Read these local SKILL.md files rather than
+resolving same-named skills through another installed plugin.
+Use `azure-functions-hosted-skills` for app
 authoring and the three Connector skills for their lifecycle handoffs.
 Use migration only when explicitly requested by name, never merely quoted.
 Generated app `src/skills` and `.agent.md` files belong to the runtime, not the
@@ -30,7 +37,9 @@ Never expose secrets; keep local settings, `.azure`, and emulator state out of
 Git. Preserve preexisting processes, data, and user configuration.
 
 Telemetry uses only Node standard APIs, the upstream public ingestion destination,
-and fixed starter attribution. Preserve opt-outs, time budgets, allowlisted
+and fixed starter attribution. Fresh setup defaults to enabled without asking a
+telemetry-choice question; the README documents intentional opt-out.
+Preserve opt-outs, time budgets, allowlisted
 fields, and best-effort failure isolation. Do not add SDK/npm dependencies or
 collect prompts, raw arguments, paths, resource identifiers, or persistent IDs.
 Azure MCP's separate telemetry stays disabled in its child-process configuration.

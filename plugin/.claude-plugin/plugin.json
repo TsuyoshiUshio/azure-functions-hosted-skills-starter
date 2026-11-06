@@ -5,7 +5,7 @@
   "author": {
     "name": "Azure Functions Team"
   },
-  "repository": "https://github.com/Azure-Samples/azure-functions-hosted-skills-starter",
+  "repository": "https://github.com/TsuyoshiUshio/azure-functions-hosted-skills-starter",
   "license": "MIT",
   "skills": "./skills/",
   "mcpServers": "./.mcp.json"

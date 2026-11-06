@@ -26,11 +26,11 @@ const fixedPaths = new Set([
   '.mcp.json', '.vscode/mcp.json', '.codex/config.toml', '.starter/upstream-LICENSE',
   '.claude-plugin/marketplace.json', '.agents/plugins/marketplace.json',
   'plugin/.claude-plugin/plugin.json', 'plugin/.codex-plugin/plugin.json', 'plugin/plugin.json',
-  'plugin/.mcp.json', 'plugin/upstream-LICENSE',
+  'plugin/.mcp.json', 'plugin/upstream-LICENSE', 'plugin/AGENTS.md', 'plugin/CLAUDE.md',
   'plugin/hooks/hooks.json', 'plugin/hooks/codex-hooks.json', 'plugin/hooks/copilot-hooks.json',
   'plugin/hooks/telemetry.config.json', 'plugin/hooks/runtime/telemetry.mjs',
   'plugin/hooks/runtime/arm-deployments.mjs', 'plugin/hooks/runtime/telemetry-config.json',
-  '.mcp.json', '.claude/settings.json', '.codex/hooks.json', 'AGENTS.md',
+  '.mcp.json', '.claude/settings.json', '.codex/hooks.json', 'AGENTS.md', 'CLAUDE.md',
   '.github/hooks/hosted-skills-starter.json', '.github/instructions/hosted-skills-starter.instructions.md',
   '.claude/rules/hosted-skills-starter.md', '.codex/config.toml', '.vscode/mcp.json',
   '.hosted-skills-starter/telemetry.mjs', '.hosted-skills-starter/arm-deployments.mjs',
@@ -41,6 +41,10 @@ const fixedPaths = new Set([
   'assets/setup/codex/.codex/config.toml', 'assets/setup/codex/.codex/hooks.json',
   'assets/setup/copilot/.mcp.json', 'assets/setup/copilot/.github/hooks/hosted-skills-starter.json',
   'assets/setup/vscode/.vscode/mcp.json', 'assets/setup/vscode/.github/hooks/hosted-skills-starter.json',
+  'assets/setup/claude/CLAUDE.md', 'assets/setup/codex/AGENTS.md',
+  'assets/setup/copilot/AGENTS.md', 'assets/setup/vscode/AGENTS.md',
+  'assets/setup/copilot/.github/instructions/hosted-skills-starter.instructions.md',
+  'assets/setup/vscode/.github/instructions/hosted-skills-starter.instructions.md',
 ]);
 const workspaceSkillRoots = ['.claude/skills', '.agents/skills', '.github/skills'];
 export const hash = content => createHash('sha256').update(content).digest('hex');
@@ -224,7 +228,7 @@ export async function collectFiles(source, commit, config, localRoot = root) {
     return { mode: metadata.split(' ')[0], path };
   });
   const read = path => gitBytes(source, 'show', `${commit}:${path}`);
-  const files = hostFiles(config);
+  const files = hostFiles(config, readFileSync(join(localRoot, 'assets', 'workspace-instructions.md'), 'utf8'));
   const sourceHashes = {};
   const references = new Set();
   for (const name of skills) {

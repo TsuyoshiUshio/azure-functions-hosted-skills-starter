@@ -104,7 +104,7 @@ for (const shell of shells) {
           HOSTED_SKILLS_STARTER_COLLECT_TELEMETRY: 'false',
           GIT_ALLOW_PROTOCOL: 'file', GIT_CONFIG_COUNT: '1',
           GIT_CONFIG_KEY_0: `url.${pathToFileURL(fixture).href}.insteadOf`,
-          GIT_CONFIG_VALUE_0: 'https://github.com/Azure-Samples/azure-functions-hosted-skills-starter.git',
+          GIT_CONFIG_VALUE_0: 'https://github.com/TsuyoshiUshio/azure-functions-hosted-skills-starter.git',
         },
       });
       assert.equal(result.status, mode === 'conflict' ? 1 : 0, result.stderr + result.stdout);

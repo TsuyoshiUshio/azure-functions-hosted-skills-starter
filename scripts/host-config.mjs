@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 export const skillRoots = ['plugin/skills'];
 export const pluginName = 'hosted-skills-starter';
 export const agents = ['claude', 'codex', 'copilot', 'vscode'];
@@ -8,6 +10,8 @@ export const skillDirectories = {
   claude: '.claude/skills', codex: '.agents/skills',
   copilot: '.github/skills', vscode: '.github/skills',
 };
+const workspaceInstructions = () =>
+  readFileSync(new URL('../assets/workspace-instructions.md', import.meta.url), 'utf8');
 
 export function json(value) {
   return `${JSON.stringify(value, null, 2)}\n`;
@@ -45,7 +49,7 @@ export function codexMcpBlock(server) {
   ].join('\n');
 }
 
-export function workspaceHostFiles(agent, config) {
+export function workspaceHostFiles(agent, config, instruction = workspaceInstructions()) {
   if (!agents.includes(agent)) throw new Error(`Unsupported agent: ${agent}`);
   const server = config.mcp.azure;
   const mcpPath = agent === 'codex' ? '.codex/config.toml' : agent === 'vscode' ? '.vscode/mcp.json' : '.mcp.json';
@@ -57,20 +61,27 @@ export function workspaceHostFiles(agent, config) {
       type: 'command', bash: hookCommand(agent),
       powershell: hookCommand(agent, { windows: true }), timeoutSec: 4, cwd: '.',
     }] } };
-  return new Map([
+  const files = new Map([
     [mcpPath, agent === 'codex' ? codexMcpBlock(server)
       : json(agent === 'vscode' ? { servers: { azure: { type: 'stdio', ...server } } }
         : { mcpServers: { azure: server } })],
     [hookPath, json(hooks)],
+    [agent === 'claude' ? 'CLAUDE.md' : 'AGENTS.md',
+      `# BEGIN hosted-skills-starter\n${instruction.replaceAll('{{skillRoot}}', skillDirectories[agent])}# END hosted-skills-starter\n`],
   ]);
+  if (agent === 'copilot' || agent === 'vscode') {
+    files.set('.github/instructions/hosted-skills-starter.instructions.md',
+      '---\napplyTo: "**"\n---\n\nRead the Hosted Skills starter block in the workspace-root `AGENTS.md`.\n');
+  }
+  return files;
 }
 
-export function hostFiles(config) {
+export function hostFiles(config, instruction = workspaceInstructions()) {
   const metadata = {
     name: pluginName, version: '0.1.0',
     description: 'Hosted Skills starter subset: authoring, migration, Connector lifecycle, MCP, and opt-out telemetry.',
     author: { name: 'Azure Functions Team' },
-    repository: 'https://github.com/Azure-Samples/azure-functions-hosted-skills-starter',
+    repository: 'https://github.com/TsuyoshiUshio/azure-functions-hosted-skills-starter',
     license: 'MIT',
     skills: './skills/',
     mcpServers: './.mcp.json',
@@ -91,6 +102,8 @@ export function hostFiles(config) {
     ['plugin/.codex-plugin/plugin.json', json({ ...metadata, hooks: './hooks/codex-hooks.json' })],
     ['plugin/plugin.json', json(copilot)],
     ['plugin/.mcp.json', json({ mcpServers: { azure: config.mcp.azure } })],
+    ['plugin/AGENTS.md', instruction.replaceAll('{{skillRoot}}', 'skills')],
+    ['plugin/CLAUDE.md', '@AGENTS.md\n'],
     ['plugin/hooks/hooks.json', json({ hooks: { PostToolUse: [hookGroup('claude', true)] } })],
     ['plugin/hooks/codex-hooks.json', json({ hooks: { PostToolUse: [hookGroup('codex', true)] } })],
     ['plugin/hooks/copilot-hooks.json', json({ hooks: { PostToolUse: [copilotHook] } })],
@@ -109,7 +122,7 @@ export function hostFiles(config) {
     })],
   ]);
   for (const agent of agents) {
-    for (const [path, content] of workspaceHostFiles(agent, config)) {
+    for (const [path, content] of workspaceHostFiles(agent, config, instruction)) {
       files.set(`assets/setup/${agent}/${path}`, content);
     }
   }

@@ -11,20 +11,20 @@ These optional launchers use **Node.js 22.13+, npx, and Git**. If any is missing
 they show the agent setup prompt instead of installing tools or partially
 configuring your workspace. That handoff exits with code `2`; no setup ran.
 
-Review the launcher before executing downloaded code. It stages the official
+Review the launcher before executing downloaded code. It stages the current
 distribution, shows a preview, asks before applying, and removes its staging
 on success, cancellation, or error. It never deploys to Azure.
 
 **PowerShell**
 
 ```powershell
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/Azure-Samples/azure-functions-hosted-skills-starter/main/setup.ps1))) -Agent copilot
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/setup.ps1))) -Agent copilot
 ```
 
 **Bash**
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/Azure-Samples/azure-functions-hosted-skills-starter/main/setup.sh) --agent copilot
+bash <(curl -fsSL https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/setup.sh) --agent copilot
 ```
 
 Choose `claude`, `codex`, `copilot`, or `vscode`. The current directory is the
@@ -45,15 +45,25 @@ When the scripted path cannot reconcile edited skills, comments, complex TOML,
 or an existing Azure server, use the recommended agent route: it can inspect
 the conflict, show a merge or replacement, and obtain your approval.
 
-An enabled plugin already supplies its own skills and hooks. Do not add a
-duplicate workspace install. Plugin manager commands are in the [README](../README.md).
+An enabled native plugin installation of this starter already supplies its own
+skills and hooks; do not duplicate it with a workspace install. A different
+Azure Functions plugin is not an installation of this starter and does not
+replace an explicitly requested local setup. Do not disable other plugins.
+Plugin manager commands are in the [README](../README.md).
 
 ## After setup
 
 Reload your agent if requested and review its workspace, hook, and MCP trust
 prompts. Setup is not permission to approve them or to deploy.
+Claude uses an owned `CLAUDE.md` block; Codex and Copilot use an owned `AGENTS.md`
+block, with a scoped Copilot instruction pointing to it. Existing instructions
+are preserved. The guidance selects local skills rather than another plugin's
+same-named skills and opens Canvas only on an explicit request.
 Missing optional Node-based MCP or telemetry is reported as deferred; it does
 not prevent authoring with the installed skills.
+An already working compatible Azure MCP can be reused without adding another
+registration. The completion report distinguishes reuse from workspace
+configuration and deferred integrations.
 
 The [README examples](../README.md#getting-started) show prompts for a Monday
 Microsoft AI briefing in Teams and migration of a GitHub Actions release digest.

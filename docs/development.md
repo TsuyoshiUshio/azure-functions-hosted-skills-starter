@@ -31,9 +31,9 @@ Agent-led setup can read these locked assets without executing JavaScript.
 
 | Host | Skills | MCP | Hooks / instructions |
 | --- | --- | --- | --- |
-| Claude Code | `.claude/skills` | `.mcp.json` | `.claude/settings.json`, `.claude/rules/hosted-skills-starter.md` |
+| Claude Code | `.claude/skills` | `.mcp.json` | `.claude/settings.json`, owned `CLAUDE.md` block |
 | Codex CLI | `.agents/skills` | `.codex/config.toml` | `.codex/hooks.json`, owned `AGENTS.md` block |
-| Copilot CLI | `.github/skills` | `.mcp.json` | `.github/hooks/hosted-skills-starter.json`, scoped instructions |
+| Copilot CLI | `.github/skills` | `.mcp.json` | `.github/hooks/hosted-skills-starter.json`, owned `AGENTS.md` block and scoped entry point |
 | VS Code, Copilot harness | `.github/skills` | `.vscode/mcp.json` | Same Copilot hook/instruction paths |
 
 Runtime, license, opt-out, and installation state live under
@@ -43,6 +43,17 @@ Native plugin installation instead uses Claude's `.claude-plugin/plugin.json`,
 Codex's `.codex-plugin/plugin.json`, and Copilot's `plugin.json`.
 Root marketplace catalogs target the same `plugin` directory. Do not patch host
 plugin caches or combine duplicate plugin/workspace hooks.
+Plugin packages also include `AGENTS.md` and `CLAUDE.md` as local guidance.
+Do not assume every plugin manager automatically loads those files or copies
+them into the user's project. Reviewed workspace setup installs the host-native
+instruction contribution; native plugin installation does not silently edit
+project instructions.
+
+Workspace guidance names the local skill paths to disambiguate same-named
+external plugins. Canvas opens only on an explicit request, never just because
+the user mentions Hosted Skills, a timer, or an agent. The entry prompt also
+identifies setup as configuration. Documents cannot force a host's routing
+before it reads them; external plugin routing may need its own correction.
 
 ## Installer and merge behavior
 
@@ -53,7 +64,9 @@ Missing prerequisites hand off to agent setup; they are not installed silently.
 
 The Node installer previews by default. Apply requires the exact plan token,
 binding the destination state and proposed assets. It preserves unrelated
-JSON fields, MCP servers, and hooks; Codex text uses owned marker blocks.
+JSON fields, MCP servers, and hooks; root instruction files and Codex TOML use
+owned marker blocks. Updates remove the former managed Claude rule file only
+when unchanged; local edits require a reviewed merge.
 Conflicting definitions, edited owned blocks, malformed JSON, unknown TOML
 structures, symlinks, stale plans, and concurrent edits stop before replacement.
 The dependency-free TOML adapter is not a full grammar validator.
@@ -105,6 +118,10 @@ Never infer permission to commit, publish, upgrade runtimes, or deploy.
 cache after host approval. Its child-process environment disables Azure MCP's
 own telemetry. A configured privileged tool is not authorization to call it.
 Do not install credentials or change global agent settings.
+Agent-led setup can reuse a compatible working host-provided MCP without adding
+a workspace registration. Record the verified capability and reuse scope, not
+credentials. This does not imply the workspace carries portable MCP settings,
+or that Azure authentication and all downstream operations have been verified.
 
 The authoring skill retrieves `ai-hosted-skills-python` from the live
 [Functions template manifest](https://cdn.functions.azure.com/public/templates-manifest/manifest.json),
@@ -126,6 +143,8 @@ Default-on, best-effort collection uses Node standard HTTPS APIs and the same
 public Application Insights ingestion destination as upstream. No SDK, persistent
 device/user ID, or telemetry npm package is shipped. Each `EventData` has fixed
 `distribution=hosted-skills-starter`; it cannot be overridden by hook input.
+Do not ask a telemetry-choice question during setup. Preserve existing opt-outs
+and honor explicit opt-out requests; the README explains how to opt out.
 
 Events are `HostedSkillsStarterSetup` (successful changed scripted setup),
 `AzureFunctionsSkillsPluginExecuted` (selected skill/tool/file categories), and
@@ -172,9 +191,17 @@ Keep local environment variants, agent credentials/transcripts, and Azurite
 databases/payloads out of Git. The ignore rules retain placeholder environment
 examples, shared host adapters, installation provenance, and all locked assets.
 
+During testing, the distribution source is
+`TsuyoshiUshio/azure-functions-hosted-skills-starter`, not the upstream skills
+repository or the separately hosted app template. Before production, confirm
+the approved owner/repository/default branch rather than assuming Azure-Samples.
+Track the source, catalogs, raw URLs, tests, and existing-installation cutover in
+[the production migration issue](https://github.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/issues/1).
+
 Before release, publish all referenced files and plugin catalogs. Keep
 `https://aka.ms/hosted-skills-starter` pointed at
-`https://raw.githubusercontent.com/Azure-Samples/azure-functions-hosted-skills-starter/main/start.md`.
+`https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/start.md`
+during testing, then update it to the approved production location.
 The short URL does not need a file extension: its destination serves the raw
 Markdown prompt. Recheck the redirect, raw/fallback URLs, and both onboarding
 paths. Keep the supplied original banner in `docs/images`.
