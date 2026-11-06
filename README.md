@@ -16,6 +16,7 @@ Paste this into your coding agent:
 ```text
 Read https://aka.ms/hosted-skills-starter and set up
 Azure Functions Hosted Skills in this workspace.
+This is workspace setup, not app creation. Do not open a Canvas.
 ```
 
 Your agent reviews existing files and sets up only what it needs.
@@ -47,7 +48,7 @@ If you already have that plugin installed, you can use its Hosted Skills authori
 <summary>GitHub Copilot CLI</summary>
 
 ```shell
-copilot plugin install Azure-Samples/azure-functions-hosted-skills-starter:plugin
+copilot plugin install TsuyoshiUshio/azure-functions-hosted-skills-starter:plugin
 ```
 
 </details>
@@ -56,7 +57,7 @@ copilot plugin install Azure-Samples/azure-functions-hosted-skills-starter:plugi
 <summary>Claude Code</summary>
 
 ```text
-/plugin marketplace add Azure-Samples/azure-functions-hosted-skills-starter
+/plugin marketplace add TsuyoshiUshio/azure-functions-hosted-skills-starter
 /plugin install hosted-skills-starter@hosted-skills-starter
 ```
 
@@ -66,7 +67,7 @@ copilot plugin install Azure-Samples/azure-functions-hosted-skills-starter:plugi
 <summary>Codex CLI</summary>
 
 ```shell
-codex plugin marketplace add Azure-Samples/azure-functions-hosted-skills-starter
+codex plugin marketplace add TsuyoshiUshio/azure-functions-hosted-skills-starter
 codex plugin add hosted-skills-starter@hosted-skills-starter
 ```
 

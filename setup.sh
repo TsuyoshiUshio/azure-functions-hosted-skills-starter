@@ -6,7 +6,7 @@ workspace=$PWD
 source=''
 preview=false
 telemetry=()
-prompt='Read https://aka.ms/hosted-skills-starter and set up Azure Functions Hosted Skills in this workspace.'
+prompt='Read https://aka.ms/hosted-skills-starter and set up Azure Functions Hosted Skills in this workspace. This is workspace setup, not app creation. Do not open a Canvas.'
 while (($#)); do
   case "$1" in
     --agent|--workspace|--source)
@@ -62,7 +62,7 @@ if [[ -z $source ]]; then
   native_staging=$(directory_path "$staging")
   staging=$native_staging
   source=$staging/source
-  git clone --quiet --depth 1 -- https://github.com/Azure-Samples/azure-functions-hosted-skills-starter.git "$source"
+  git clone --quiet --depth 1 -- https://github.com/TsuyoshiUshio/azure-functions-hosted-skills-starter.git "$source"
   revision=$(git -C "$source" rev-parse --verify HEAD)
   if [[ ! $revision =~ ^[a-f0-9]{40}$ ]]; then printf 'Could not resolve the source revision.\n' >&2; exit 1; fi
   git -C "$source" checkout --quiet --detach "$revision"

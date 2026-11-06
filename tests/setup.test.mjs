@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { applySetup, buildSetup, installationLock } from '../scripts/setup.mjs';
 import { agents, clientNames, hookCommand, skillDirectories, workspaceHostFiles } from '../scripts/host-config.mjs';
+import { hash } from '../scripts/update-skills.mjs';
 
 const root = resolve(import.meta.dirname, '..');
 
@@ -50,6 +51,90 @@ for (const agent of agents) {
     assert.throws(() => buildSetup(directory, agent === 'claude' ? 'codex' : 'claude'), /changing agents/);
   });
 }
+
+for (const agent of agents) {
+  test(`${agent} native instructions preserve user content and select local skills without a Canvas handoff`, t => {
+    const directory = workspace(t);
+    const path = agent === 'claude' ? 'CLAUDE.md' : 'AGENTS.md';
+    const userRules = '# My project\n\nPreserve my existing instructions.\n';
+    put(directory, path, userRules);
+    const setup = buildSetup(directory, agent);
+    applySetup(setup, setup.token);
+    const instructions = read(directory, path);
+    assert.ok(instructions.startsWith(userRules));
+    assert.ok(instructions.includes(`${skillDirectories[agent]}/azure-functions-hosted-skills/SKILL.md`));
+    assert.equal(instructions.includes('{{skillRoot}}'), false);
+    assert.match(instructions, /Prefer these\s+workspace\/distribution-local files over same-named skills/);
+    assert.match(instructions, /Open azure-functions-hosted-skills-canvas only when the user explicitly asks/);
+    assert.match(instructions, /Fresh setup defaults telemetry to enabled without a telemetry-choice question/);
+    assert.equal(JSON.parse(read(directory, '.hosted-skills-starter/telemetry.config.json')).enabled, true);
+    assert.equal(setup.manifest.blocks[path], hash(instructions.slice(
+      instructions.indexOf('# BEGIN hosted-skills-starter'),
+      instructions.indexOf('# END hosted-skills-starter') + '# END hosted-skills-starter'.length)));
+    if (agent === 'copilot' || agent === 'vscode') {
+      assert.match(read(directory, '.github/instructions/hosted-skills-starter.instructions.md'),
+        /workspace-root `AGENTS.md`/);
+    }
+    put(directory, path, instructions + '\nA later user rule.\n');
+    const again = buildSetup(directory, agent);
+    assert.deepEqual(again.plan, { changes: [], conflicts: [], preserved: [] });
+    applySetup(again, again.token);
+    assert.ok(read(directory, path).endsWith('A later user rule.\n'));
+    put(directory, '.hosted-skills-starter/telemetry.config.json', '{"enabled":false}\n');
+    const optedOut = buildSetup(directory, agent);
+    applySetup(optedOut, optedOut.token);
+    assert.equal(JSON.parse(read(directory, '.hosted-skills-starter/telemetry.config.json')).enabled, false);
+  });
+}
+
+test('locally deleted native instructions or owned blocks require a reviewed merge', t => {
+  for (const agent of agents) {
+    for (const removeFile of [false, true]) {
+      const directory = workspace(t);
+      const path = agent === 'claude' ? 'CLAUDE.md' : 'AGENTS.md';
+      const setup = buildSetup(directory, agent);
+      applySetup(setup, setup.token);
+      if (removeFile) rmSync(join(directory, path));
+      else put(directory, path, '# Keep my project instructions.\n');
+      const state = read(directory, installationLock);
+      assert.throws(() => buildSetup(directory, agent), /Locally removed starter instructions.*reviewed merge/);
+      assert.equal(read(directory, installationLock), state);
+      if (removeFile) assert.equal(existsSync(join(directory, path)), false);
+      else assert.equal(read(directory, path), '# Keep my project instructions.\n');
+    }
+  }
+});
+
+test('Claude legacy rule migration removes only unchanged owned guidance and preserves CLAUDE.md', t => {
+  for (const edited of [false, true]) {
+    const directory = workspace(t);
+    const setup = buildSetup(directory, 'claude');
+    applySetup(setup, setup.token);
+    const path = '.claude/rules/hosted-skills-starter.md';
+    const legacy = 'Previously installed starter guidance.\n';
+    const userRules = '# Existing Claude instructions\n';
+    put(directory, path, edited ? legacy + 'A local edit.\n' : legacy);
+    put(directory, 'CLAUDE.md', userRules);
+    const state = JSON.parse(read(directory, installationLock));
+    delete state.files['CLAUDE.md'];
+    delete state.blocks['CLAUDE.md'];
+    state.files[path] = hash(legacy);
+    put(directory, installationLock, JSON.stringify(state, null, 2) + '\n');
+    const upgrade = buildSetup(directory, 'claude');
+    if (edited) {
+      assert.ok(upgrade.plan.conflicts.includes(path));
+      assert.throws(() => applySetup(upgrade, upgrade.token), /Local edit conflicts/);
+      assert.equal(read(directory, 'CLAUDE.md'), userRules);
+      assert.equal(read(directory, path), legacy + 'A local edit.\n');
+    } else {
+      assert.ok(upgrade.plan.changes.some(change => change.path === path && change.action === 'delete'));
+      applySetup(upgrade, upgrade.token);
+      assert.equal(existsSync(join(directory, path)), false);
+      assert.ok(read(directory, 'CLAUDE.md').startsWith(userRules));
+      assert.deepEqual(buildSetup(directory, 'claude').plan.changes, []);
+    }
+  }
+});
 
 test('JSON setup preserves other MCP servers, hooks and user settings across later edits', t => {
   const directory = workspace(t);
@@ -128,6 +213,9 @@ test('malformed JSON, conflicting Azure servers and unknown TOML structures fail
 test('edited managed blocks and hooks are never silently replaced', t => {
   for (const [agent, path, change] of [
     ['codex', 'AGENTS.md', text => text.replace('Never download', 'Please download')],
+    ['claude', 'CLAUDE.md', text => text.replace('Never download', 'Please download')],
+    ['copilot', 'AGENTS.md', text => text.replace('Never download', 'Please download')],
+    ['vscode', 'AGENTS.md', text => text.replace('Never download', 'Please download')],
     ['codex', '.codex/config.toml', text => text.replace('command = "npx"', 'command = "mine"')],
     ['claude', '.claude/settings.json', text => text.replace('2500', '5000').replace('node -e', 'custom-node -e')],
   ]) {
@@ -210,6 +298,11 @@ test('bootstrap prompt is shell-friendly and keeps setup distinct from app/cloud
   assert.match(prompt, /Temporary downloads.*cleaned/is);
   assert.match(prompt, /Hosted Skills setup complete!/);
   assert.match(prompt, /azure-functions-hosted-skills-migrate/);
+  assert.match(prompt, /do not invoke another plugin's azure-functions-hosted-skills skill/i);
+  assert.match(prompt, /Do not open azure-functions-hosted-skills-canvas unless the user explicitly asks/);
+  assert.match(prompt, /Do not ask a telemetry-choice\s+question/);
+  assert.doesNotMatch(prompt, /Briefly disclose that\s+telemetry is optional/);
+  assert.match(prompt, /do not modify installer internals to omit MCP/);
 });
 
 test('agent-led blueprints match a fresh scripted install for every host', t => {
@@ -218,13 +311,30 @@ test('agent-led blueprints match a fresh scripted install for every host', t => 
     const setup = buildSetup(workspace(t), agent, { telemetry: false });
     for (const [path, content] of workspaceHostFiles(agent, config)) {
       assert.equal(read(root, `assets/setup/${agent}/${path}`), content);
-      if (agent === 'codex' && path.endsWith('.toml')) {
+      if (!path.endsWith('.json')) {
         assert.equal(setup.files.get(path).trim(), content.trim());
       } else {
         assert.deepEqual(JSON.parse(setup.files.get(path)), JSON.parse(content));
       }
     }
   }
+});
+
+test('staging distribution references and packaged guidance use the current source consistently', () => {
+  const repository = 'TsuyoshiUshio/azure-functions-hosted-skills-starter';
+  for (const path of ['README.md', 'start.md', 'setup.ps1', 'setup.sh', 'docs/setup.md',
+    'docs/development.md', 'scripts/host-config.mjs', 'skills/skills-update/SKILL.md',
+    'plugin/skills/skills-update/SKILL.md', 'plugin/.claude-plugin/plugin.json',
+    'plugin/.codex-plugin/plugin.json', 'plugin/plugin.json']) {
+    const text = read(root, path);
+    assert.ok(text.includes(repository), path);
+    assert.equal(text.includes('Azure-Samples/azure-functions-hosted-skills-starter'), false, path);
+  }
+  assert.match(read(root, 'plugin/AGENTS.md'), /`skills\/azure-functions-hosted-skills\/SKILL.md`/);
+  assert.equal(read(root, 'plugin/CLAUDE.md'), '@AGENTS.md\n');
+  const readme = read(root, 'README.md');
+  assert.match(readme, /This is workspace setup, not app creation\. Do not open a Canvas\./);
+  assert.ok(read(root, 'docs/development.md').includes(`${repository}/issues/1`));
 });
 
 test('customer README stays brief and links the supplied banner and focused guides', () => {

@@ -76,6 +76,7 @@ export function buildSetup(workspace, agent, { source = sourceRoot, telemetry } 
   const mergeHashes = {};
   const config = object(readFileSync(join(source, 'plugin', '.mcp.json'), 'utf8'), 'plugin/.mcp.json');
   const server = config.mcpServers.azure;
+  const hostFiles = workspaceHostFiles(agent, { mcp: { azure: server } }, instruction);
   const skillRoot = skillDirectories[agent];
   for (const path of Object.keys(upstream.files)) {
     if (path.startsWith('plugin/skills/')) {
@@ -136,22 +137,27 @@ export function buildSetup(workspace, agent, { source = sourceRoot, telemetry } 
     });
   } else {
     const path = '.github/hooks/hosted-skills-starter.json';
-    files.set(path, workspaceHostFiles(agent, { mcp: { azure: server } }).get(path));
+    files.set(path, hostFiles.get(path));
   }
   merge('.hosted-skills-starter/telemetry.config.json', text => {
     const current = text === undefined ? { enabled: true } : object(text, 'telemetry.config.json');
     if (typeof current.enabled !== 'boolean') throw new Error('Telemetry enabled must be true or false.');
     return json({ ...current, ...(telemetry === false ? { enabled: false } : {}) });
   });
-  if (agent === 'codex') {
-    const block = `${begin}\n${instruction}${end}\n`;
-    blocks['AGENTS.md'] = hash(block.trimEnd());
-    merge('AGENTS.md', text => replaceBlock(text ?? '', block, previous?.blocks?.['AGENTS.md'] ?? blocks['AGENTS.md']));
-  } else if (agent === 'claude') {
-    files.set('.claude/rules/hosted-skills-starter.md', instruction);
-  } else {
+  const instructionPath = agent === 'claude' ? 'CLAUDE.md' : 'AGENTS.md';
+  const block = hostFiles.get(instructionPath);
+  blocks[instructionPath] = hash(block.trimEnd());
+  merge(instructionPath, text => {
+    if (previous?.files?.[instructionPath] && (text === undefined
+      || (previous?.blocks?.[instructionPath] && !text.includes(begin)))) {
+      throw new Error(`Locally removed starter instructions require a reviewed merge: ${instructionPath}`);
+    }
+    return replaceBlock(text ?? '', block,
+      previous?.blocks?.[instructionPath] ?? blocks[instructionPath]);
+  });
+  if (agent === 'copilot' || agent === 'vscode') {
     files.set('.github/instructions/hosted-skills-starter.instructions.md',
-      `---\napplyTo: "**"\n---\n\n${instruction}`);
+      hostFiles.get('.github/instructions/hosted-skills-starter.instructions.md'));
   }
 
   const baseline = { ...previous, files: { ...previous?.files } };

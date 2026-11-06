@@ -27,7 +27,8 @@ scripts, or an app template into the workspace.
 Copy the contents of `plugin/hooks/runtime` to `.hosted-skills-starter`.
 Copy `plugin/upstream-LICENSE` there as `upstream-LICENSE`.
 Create `.hosted-skills-starter/telemetry.config.json` with `enabled: true`
-only if no preference already exists. Use `enabled: false` if the user opts out.
+only if no preference already exists. Do not ask a telemetry-choice question.
+Use `enabled: false` only for an existing opt-out or an explicit user request.
 Retain an ancestor or environment opt-out. Malformed preference files require
 an approved repair; they are not permission to re-enable collection.
 Do not manufacture a setup telemetry event or invent a non-Node sender.
@@ -37,13 +38,18 @@ handling and relative runtime discovery. Reuse these exact hook entries rather
 than copying plugin-root commands or synthesizing a new shell launcher.
 Node may be absent: these hooks then do nothing and return success.
 
-Read `assets/workspace-instructions.md` and install its contribution:
+The selected host's locked blueprints render `assets/workspace-instructions.md`
+with its actual local skill root. Install their instruction contributions:
 
-- Claude: `.claude/rules/hosted-skills-starter.md`.
+- Claude: an owned block in `CLAUDE.md`.
+- Codex and Copilot/VS Code: an owned block in `AGENTS.md`.
 - Copilot/VS Code: `.github/instructions/hosted-skills-starter.instructions.md`,
-  with the standard `applyTo: "**"` frontmatter.
-- Codex: an owned block in `AGENTS.md`, using
-  `# BEGIN hosted-skills-starter` and `# END hosted-skills-starter` markers.
+  with standard frontmatter, pointing to the root `AGENTS.md` contribution.
+
+Use `# BEGIN hosted-skills-starter` and `# END hosted-skills-starter` markers.
+Merge blocks into existing files, not over them. Read the local `SKILL.md` paths
+from this guidance instead of invoking another plugin's same-named skills.
+Canvas is separate and opens only when the user explicitly asks to open it.
 
 ## Merge existing files, do not reset them
 
@@ -78,6 +84,11 @@ report the unresolved artifacts. Never print secrets in diffs or logs.
 ## Optional Node-dependent integrations
 
 The MCP blueprints use the pinned npx command from `starter.config.json`.
+First check for a compatible working server already provided by the host or
+workspace. Reuse it without another registration, even when Node is available.
+Record the verified capability and whether reuse is host-scoped or workspace-
+configured; do not copy credentials. Omit the new MCP blueprint on this agent-led
+route, not by patching the installer's source or mutating its generated plan.
 If Node/npx cannot run, leave the user's working servers alone and **do not add
 an active, unusable npx server**. Reuse a compatible existing Azure MCP service
 if available, or record Azure MCP as deferred. The authoring skill can retrieve
@@ -108,8 +119,8 @@ installation:
   deferred or reusing a different server. Record reuse in `reused`; never copy
   credentials or unrelated server definitions into this record.
 - `hook`: for Claude/Codex, the starter group from the blueprint; `blocks`: hashes
-  of owned Codex TOML / AGENTS marker blocks, including the markers but excluding
-  their trailing newline. This allows future updates to distinguish local edits.
+  of owned Codex TOML and AGENTS/CLAUDE marker blocks, including the markers but
+  excluding their trailing newline. This distinguishes local edits on updates.
 - `deferred`: optional integrations not yet available, such as `azure-mcp` or
   `telemetry-runtime`; `preserved`: any deliberately retained local skill edits.
 
@@ -132,3 +143,5 @@ or unrelated user data. Keep and report backups still needed for recovery.
 Finish in the user's language with the prominent completion message and both
 creation and migration prompts from `start.md`. Distinguish skills ready for
 authoring from optional deferred MCP/telemetry, and from pending reload/trust.
+Report a reused MCP separately; do not imply its configuration is portable to
+another host when it is provided only by the current host.

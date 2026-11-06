@@ -12,7 +12,7 @@ param(
 function Invoke-StarterSetup {
     $ErrorActionPreference = 'Stop'
     $PSNativeCommandUseErrorActionPreference = $false
-    $prompt = 'Read https://aka.ms/hosted-skills-starter and set up Azure Functions Hosted Skills in this workspace.'
+    $prompt = 'Read https://aka.ms/hosted-skills-starter and set up Azure Functions Hosted Skills in this workspace. This is workspace setup, not app creation. Do not open a Canvas.'
     $node = Get-Command node -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1
     $compatible = $false
     if ($node) {
@@ -44,8 +44,8 @@ function Invoke-StarterSetup {
             $staging = Join-Path ([IO.Path]::GetTempPath()) ('hosted-skills-starter.' + [guid]::NewGuid().ToString('N'))
             New-Item -ItemType Directory -Path $staging | Out-Null
             $distribution = Join-Path $staging 'source'
-            & $git.Source clone --quiet --depth 1 -- 'https://github.com/Azure-Samples/azure-functions-hosted-skills-starter.git' $distribution | Out-Host
-            if ($LASTEXITCODE -ne 0) { throw 'Could not stage the official distribution.' }
+            & $git.Source clone --quiet --depth 1 -- 'https://github.com/TsuyoshiUshio/azure-functions-hosted-skills-starter.git' $distribution | Out-Host
+            if ($LASTEXITCODE -ne 0) { throw 'Could not stage the distribution.' }
             $revision = & $git.Source -C $distribution rev-parse --verify HEAD
             if ($LASTEXITCODE -ne 0 -or $revision -notmatch '^[a-f0-9]{40}$') { throw 'Could not resolve the source revision.' }
             & $git.Source -C $distribution checkout --quiet --detach $revision | Out-Host

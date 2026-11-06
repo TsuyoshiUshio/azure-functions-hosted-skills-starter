@@ -40,8 +40,9 @@ Or supply a validated full 40-character lowercase upstream SHA. Pass it as a
 separate argument; do not interpolate untrusted text into shell commands.
 The preview fetches Git objects into temporary staging without changing assets.
 
-For a selective workspace, retain its agent and opt-out. Stage the official
-`Azure-Samples/azure-functions-hosted-skills-starter` distribution outside the
+For a selective workspace, retain its agent, MCP reuse/deferred state, and
+opt-out. Stage the current
+`TsuyoshiUshio/azure-functions-hosted-skills-starter` distribution outside the
 app, using the recorded starter revision. If it is null or unavailable, use
 the original local review checkout or ask the user to select/approve published
 tooling; never invent a remote commit or silently upgrade tooling. Follow
@@ -71,6 +72,9 @@ For a selective workspace, preview the staged `scripts/setup.mjs` against the
 installed workspace and recorded agent, then get approval for its exact plan
 token and apply. This step preserves unrelated MCP servers/hooks/instructions
 and local opt-out. Do not copy staging, package files, or other agents into the app.
+If the installation reuses a host-provided MCP or defers it, follow the agent-led
+recipe for that subset instead of adding a new registration or altering installer
+internals. Preserve the recorded reuse scope and verify it on the current host.
 
 Stop on new dependencies, changed collection contracts, local conflicts, malformed
 configuration, or symlinks. There is no force option. Show the conflict and agree
