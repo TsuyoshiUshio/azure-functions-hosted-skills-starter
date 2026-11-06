@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node -e \"let f=require('node:fs'),p=require('node:path');try{let d=process.cwd();while(!f.existsSync(p.join(d,'.hosted-skills-starter','telemetry.mjs'))&&p.dirname(d)!==d)d=p.dirname(d);let s=p.join(d,'.hosted-skills-starter','telemetry.mjs');import(require('node:url').pathToFileURL(s).href).then(m=>m.runHook('claude-code')).then(()=>process.exit(0)).catch(()=>process.exit(0));}catch{}\" >/dev/null 2>&1 || true",
+            "timeout": 4,
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}

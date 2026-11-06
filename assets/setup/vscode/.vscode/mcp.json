@@ -1,0 +1,17 @@
+{
+  "servers": {
+    "azure": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@azure/mcp@4.0.0-beta.6",
+        "server",
+        "start"
+      ],
+      "env": {
+        "AZURE_MCP_COLLECT_TELEMETRY": "false"
+      }
+    }
+  }
+}

@@ -1,0 +1,281 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
+import { applySetup, buildSetup, installationLock } from '../scripts/setup.mjs';
+import { agents, clientNames, hookCommand, skillDirectories, workspaceHostFiles } from '../scripts/host-config.mjs';
+
+const root = resolve(import.meta.dirname, '..');
+
+function workspace(t) {
+  const directory = mkdtempSync(join(tmpdir(), "starter setup's test-"));
+  t.after(() => rmSync(directory, { recursive: true, force: true }));
+  return directory;
+}
+
+function put(directory, path, text) {
+  const full = join(directory, path);
+  mkdirSync(dirname(full), { recursive: true });
+  writeFileSync(full, text);
+}
+
+function read(directory, path) { return readFileSync(join(directory, path), 'utf8'); }
+
+for (const agent of agents) {
+  test(`${agent} setup previews without writes, installs only its host, and is idempotent`, t => {
+    const directory = workspace(t);
+    const setup = buildSetup(directory, agent, { telemetry: false });
+    assert.deepEqual(readdirSync(directory), []);
+    assert.deepEqual(setup.plan.conflicts, []);
+    assert.equal(setup.plan.changes.length > 30, true);
+    const selected = skillDirectories[agent];
+    assert.equal(setup.files.has(`${selected}/azure-functions-hosted-skills/SKILL.md`), true);
+    for (const other of new Set(Object.values(skillDirectories))) {
+      if (other !== selected) assert.equal([...setup.files.keys()].some(path => path.startsWith(`${other}/`)), false);
+    }
+    for (const forbidden of ['package.json', 'package-lock.json', 'node_modules', 'plugin/', 'tests/', 'scripts/', '.devcontainer']) {
+      assert.equal([...setup.files.keys()].some(path => path.startsWith(forbidden)), false, forbidden);
+    }
+    applySetup(setup, setup.token);
+    const state = JSON.parse(read(directory, installationLock));
+    assert.equal(state.agent, agent);
+    assert.equal(state.commit.length, 40);
+    assert.equal(JSON.parse(read(directory, '.hosted-skills-starter/telemetry.config.json')).enabled, false);
+    const again = buildSetup(directory, agent);
+    assert.deepEqual(again.plan, { changes: [], conflicts: [], preserved: [] });
+    applySetup(again, again.token);
+    assert.equal(read(directory, installationLock), JSON.stringify(state, null, 2) + '\n');
+    assert.throws(() => buildSetup(directory, agent === 'claude' ? 'codex' : 'claude'), /changing agents/);
+  });
+}
+
+test('JSON setup preserves other MCP servers, hooks and user settings across later edits', t => {
+  const directory = workspace(t);
+  put(directory, '.mcp.json', '{"mcpServers":{"mine":{"command":"custom"}},"custom":true}');
+  put(directory, '.claude/settings.json',
+    '{"permissions":{"allow":[]},"hooks":{"PostToolUse":[{"hooks":[{"type":"command","command":"echo mine"}]}]}}');
+  let setup = buildSetup(directory, 'claude');
+  applySetup(setup, setup.token);
+  let mcp = JSON.parse(read(directory, '.mcp.json'));
+  mcp.mcpServers.later = { command: 'another' };
+  put(directory, '.mcp.json', JSON.stringify(mcp));
+  const settings = JSON.parse(read(directory, '.claude/settings.json'));
+  settings.hooks.PostToolUse.push({ hooks: [{ type: 'command', command: 'echo later' }] });
+  settings.userSetting = 'keep';
+  put(directory, '.claude/settings.json', JSON.stringify(settings));
+  setup = buildSetup(directory, 'claude');
+  assert.deepEqual(setup.plan.conflicts, []);
+  applySetup(setup, setup.token);
+  mcp = JSON.parse(read(directory, '.mcp.json'));
+  assert.equal(mcp.custom, true);
+  assert.equal(mcp.mcpServers.mine.command, 'custom');
+  assert.equal(mcp.mcpServers.later.command, 'another');
+  assert.equal(mcp.mcpServers.azure.env.AZURE_MCP_COLLECT_TELEMETRY, 'false');
+  assert.equal(JSON.parse(read(directory, '.claude/settings.json')).hooks.PostToolUse.length, 3);
+  assert.equal(JSON.parse(read(directory, '.claude/settings.json')).userSetting, 'keep');
+});
+
+test('Codex setup preserves existing instructions and TOML servers, producing parseable native configuration', t => {
+  const directory = workspace(t);
+  const instructions = '# My project\n\nPreserve this rule.\n';
+  const toml = 'model = "local-choice"\n\n[mcp_servers.mine]\ncommand = "custom"\n';
+  put(directory, 'AGENTS.md', instructions);
+  put(directory, '.codex/config.toml', toml);
+  const setup = buildSetup(directory, 'codex');
+  applySetup(setup, setup.token);
+  assert.ok(read(directory, 'AGENTS.md').startsWith(instructions));
+  assert.ok(read(directory, '.codex/config.toml').startsWith(toml));
+  const parser = spawnSync('python', ['-c',
+    'import json,sys,tomllib; print(json.dumps(tomllib.loads(sys.stdin.read())))'], {
+    input: read(directory, '.codex/config.toml'), encoding: 'utf8',
+  });
+  if (parser.error?.code === 'ENOENT') return t.diagnostic('Python unavailable; native TOML parse covered separately when available.');
+  assert.equal(parser.status, 0, parser.stderr);
+  const parsed = JSON.parse(parser.stdout);
+  assert.equal(parsed.mcp_servers.mine.command, 'custom');
+  assert.equal(parsed.mcp_servers.azure.command, 'npx');
+  assert.equal(parsed.model, 'local-choice');
+  put(directory, 'AGENTS.md', read(directory, 'AGENTS.md') + '\nA later user rule.\n');
+  assert.deepEqual(buildSetup(directory, 'codex').plan.conflicts, []);
+});
+
+test('malformed JSON, conflicting Azure servers and unknown TOML structures fail before any writes', t => {
+  for (const [agent, path, text] of [
+    ['claude', '.mcp.json', '{invalid'],
+    ['claude', '.mcp.json', '{"token":private-secret}'],
+    ['vscode', '.vscode/mcp.json', '{"servers":{"azure":{"command":"mine"}}}'],
+    ['codex', '.codex/config.toml', '[mcp_servers.azure]\ncommand = "mine"'],
+    ['codex', '.codex/config.toml', '[mcp_servers]\nazure = { command = "mine" }'],
+    ['codex', '.codex/config.toml', 'mcp_servers.azure.command = "mine"'],
+    ['codex', '.codex/config.toml', '[mcp_servers."\\u0061zure"]\ncommand = "mine"'],
+    ['codex', '.codex/config.toml', '# BEGIN hosted-skills-starter\npartial'],
+    ['claude', '.claude/settings.json', '{"hooks":[]}'],
+  ]) {
+    const directory = workspace(t);
+    put(directory, path, text);
+    assert.throws(() => buildSetup(directory, agent), error => {
+      assert.equal(error.message.includes('private-secret'), false);
+      return true;
+    });
+    assert.equal(read(directory, path), text);
+    assert.equal(existsSync(join(directory, installationLock)), false);
+    assert.equal(existsSync(join(directory, '.hosted-skills-starter/telemetry.mjs')), false);
+  }
+});
+
+test('edited managed blocks and hooks are never silently replaced', t => {
+  for (const [agent, path, change] of [
+    ['codex', 'AGENTS.md', text => text.replace('Never download', 'Please download')],
+    ['codex', '.codex/config.toml', text => text.replace('command = "npx"', 'command = "mine"')],
+    ['claude', '.claude/settings.json', text => text.replace('2500', '5000').replace('node -e', 'custom-node -e')],
+  ]) {
+    const directory = workspace(t);
+    const setup = buildSetup(directory, agent);
+    applySetup(setup, setup.token);
+    const modified = change(read(directory, path));
+    put(directory, path, modified);
+    assert.throws(() => buildSetup(directory, agent), /reviewed merge/);
+    assert.equal(read(directory, path), modified);
+  }
+});
+
+test('plan tokens, concurrent edits, deleted assets and symlinks are guarded', t => {
+  const directory = workspace(t);
+  const first = buildSetup(directory, 'copilot', { telemetry: false });
+  assert.throws(() => applySetup(first, 'stale'), /plan changed/);
+  assert.equal(existsSync(join(directory, installationLock)), false);
+  put(directory, '.mcp.json', '{"mcpServers":{"mine":{}}}');
+  assert.throws(() => applySetup(first, first.token), /Concurrent edit/);
+  const second = buildSetup(directory, 'copilot', { telemetry: false });
+  assert.notEqual(first.token, second.token);
+  applySetup(second, second.token);
+  const asset = '.github/skills/azure-functions-hosted-skills/SKILL.md';
+  rmSync(join(directory, asset));
+  assert.ok(buildSetup(directory, 'copilot').plan.conflicts.includes(asset));
+  const linked = workspace(t);
+  const outside = workspace(t);
+  symlinkSync(outside, join(linked, '.hosted-skills-starter'), process.platform === 'win32' ? 'junction' : 'dir');
+  assert.throws(() => buildSetup(linked, 'copilot'), /symlink/);
+});
+
+test('actual native launchers locate their runtime from nested non-Git workspaces, including quoted paths', t => {
+  for (const agent of agents) {
+    const directory = workspace(t);
+    const setup = buildSetup(directory, agent, { telemetry: false });
+    applySetup(setup, setup.token);
+    put(directory, '.hosted-skills-starter/telemetry.mjs',
+      "import {writeFileSync} from 'node:fs'; export async function runHook(client) {writeFileSync(process.env.STARTER_TEST_LOG,client);}");
+    const nested = join(directory, 'app', 'nested');
+    mkdirSync(nested, { recursive: true });
+    const marker = join(directory, 'invoked.txt');
+    const windows = process.platform === 'win32';
+    const result = spawnSync(windows ? 'powershell.exe' : 'bash',
+      windows ? ['-NoProfile', '-NonInteractive', '-Command', hookCommand(agent, { windows })]
+        : ['-c', hookCommand(agent)], {
+        cwd: nested, input: '{}', encoding: 'utf8', timeout: 10000,
+        env: { ...process.env, STARTER_TEST_LOG: marker, HOSTED_SKILLS_STARTER_COLLECT_TELEMETRY: 'false' },
+      });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(readFileSync(marker, 'utf8'), clientNames[agent]);
+  }
+});
+
+test('actual CLI setup binds preview/apply and keeps telemetry disabled without npm or Azure', t => {
+  const directory = workspace(t);
+  const args = [join(root, 'scripts', 'setup.mjs'), '--agent', 'codex', '--workspace', directory, '--no-telemetry'];
+  const options = { encoding: 'utf8', timeout: 10000,
+    env: { ...process.env, HOSTED_SKILLS_STARTER_COLLECT_TELEMETRY: 'false' } };
+  const preview = spawnSync(process.execPath, args, options);
+  assert.equal(preview.status, 0, preview.stderr);
+  assert.deepEqual(readdirSync(directory), []);
+  const plan = JSON.parse(preview.stdout);
+  const apply = spawnSync(process.execPath, [...args, '--apply', '--expect-plan', plan.planToken], options);
+  assert.equal(apply.status, 0, apply.stderr);
+  assert.equal(JSON.parse(apply.stdout).mode, 'apply');
+  assert.equal(JSON.parse(read(directory, '.hosted-skills-starter/telemetry.config.json')).enabled, false);
+  assert.equal(existsSync(join(directory, 'node_modules')), false);
+});
+
+test('bootstrap prompt is shell-friendly and keeps setup distinct from app/cloud operations', () => {
+  const prompt = read(root, 'start.md');
+  assert.equal(prompt.includes('"'), false);
+  assert.match(prompt, /preview.*approved/is);
+  assert.match(prompt, /--expect-plan/);
+  assert.match(prompt, /do not install Node or other tools automatically/i);
+  assert.match(prompt, /continue with agent-led setup/i);
+  assert.match(prompt, /Definition of done/);
+  assert.match(prompt, /merge or intentional replacement/);
+  assert.match(prompt, /Temporary downloads.*cleaned/is);
+  assert.match(prompt, /Hosted Skills setup complete!/);
+  assert.match(prompt, /azure-functions-hosted-skills-migrate/);
+});
+
+test('agent-led blueprints match a fresh scripted install for every host', t => {
+  const config = JSON.parse(read(root, 'starter.config.json'));
+  for (const agent of agents) {
+    const setup = buildSetup(workspace(t), agent, { telemetry: false });
+    for (const [path, content] of workspaceHostFiles(agent, config)) {
+      assert.equal(read(root, `assets/setup/${agent}/${path}`), content);
+      if (agent === 'codex' && path.endsWith('.toml')) {
+        assert.equal(setup.files.get(path).trim(), content.trim());
+      } else {
+        assert.deepEqual(JSON.parse(setup.files.get(path)), JSON.parse(content));
+      }
+    }
+  }
+});
+
+test('customer README stays brief and links the supplied banner and focused guides', () => {
+  const readme = read(root, 'README.md');
+  assert.ok(readme.split('\n').length <= 100);
+  assert.ok(readme.split(/\s+/).length <= 600);
+  const shortcut = readme.indexOf('https://aka.ms/hosted-skills-starter ');
+  assert.ok(shortcut >= 0 && shortcut < readme.indexOf('Prefer a plugin'));
+  assert.match(readme, /Node.js is optional/);
+  assert.match(readme, /azure-functions-hosted-skills-migrate/);
+  const sections = ['## Getting started', '## Terminal setup', '## Developer guide',
+    '<summary>Disable telemetry</summary>'].map(text => readme.indexOf(text));
+  assert.ok(sections.every(index => index >= 0));
+  assert.deepEqual(sections, [...sections].sort((a, b) => a - b));
+  assert.match(readme, /<details>\s*<summary>Disable telemetry<\/summary>/);
+  assert.doesNotMatch(readme, /^## Disable telemetry/m);
+  assert.match(readme, /<sub>This starter bundles the Hosted Skills-related subset of/);
+  assert.ok(readme.includes('https://github.com/Azure/azure-functions-skills'));
+  assert.match(readme, /without installing this subset again\.<\/sub>/);
+  assert.ok(readme.indexOf('## Special thanks') > readme.indexOf('<summary>Disable telemetry</summary>'));
+  assert.ok(readme.includes('[shibayan](https://github.com/shibayan)'));
+  assert.ok(readme.includes('https://github.com/shibayan/azure-functions-hosted-skills-starter'));
+  for (const path of ['docs/images/hosted-skills-banner.png', 'docs/setup.md', 'docs/development.md']) {
+    assert.ok(readme.includes(path));
+    assert.ok(existsSync(join(root, path)), path);
+  }
+  const guide = read(root, 'docs/agent-setup.md');
+  for (const term of ['JSONC', 'deferred', 'preservedHashes', 'SHA-256', 'cleanup', 'Recovery']) {
+    assert.ok(guide.toLowerCase().includes(term.toLowerCase()), term);
+  }
+});
+
+test('README, agent handoff, and terminal launchers share concrete creation and migration prompts', () => {
+  const examples = text => [...text.matchAll(/^> (.+(?:\n> .+)*)/gm)]
+    .map(match => match[1].replace(/\n> /g, ' '));
+  const prompts = examples(read(root, 'README.md'));
+  assert.equal(prompts.length, 2);
+  assert.deepEqual(examples(read(root, 'start.md')), prompts);
+  assert.match(prompts[0], /Every Monday at 08:00 JST/);
+  assert.match(prompts[0], /past seven days/);
+  assert.match(prompts[0], /official Microsoft sources, include source links/);
+  assert.match(prompts[0], /existing Teams thread/);
+  assert.match(prompts[1], /\.github\/workflows\/weekly-releases\.yml/);
+  assert.match(prompts[1], /every Friday at 09:00 JST/);
+  assert.match(prompts[1], /Preserve its repository list, schedule, and destination/);
+  for (const path of ['setup.ps1', 'setup.sh']) {
+    const launcher = read(root, path);
+    for (const prompt of prompts) {
+      assert.match(prompt, /do not deploy or send messages yet/);
+      assert.ok(launcher.includes(prompt), path);
+    }
+    assert.ok(launcher.includes('https://aka.ms/hosted-skills-starter and set up'), path);
+  }
+});

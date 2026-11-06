@@ -1,0 +1,23 @@
+{
+  "skill_name": "skills-update",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Preview the latest azure-functions-skills update. Do not apply it yet.",
+      "expected_output": "Identify the installation type, resolve main to a full SHA, preview the allowlisted skills and reviewed SDK-free telemetry assets without npm install, and report the scope without changing the workspace or lock.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Use skills-update to synchronize to commit 4189ee9b811912e7149927efdd406a9ca71052eb. I added a different MCP server and modified a bundled skill locally.",
+      "expected_output": "Preview the exact commit, preserve local edits and unrelated MCP servers, explain conflicts and seek approval for a merge rather than forcing the update.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Upgrade azurefunctions-agents-runtime and deploy my existing Hosted Skill.",
+      "expected_output": "Do not select skills-update: Python package upgrades and application deployment are outside its scope.",
+      "files": []
+    }
+  ]
+}

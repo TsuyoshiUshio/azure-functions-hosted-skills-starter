@@ -218,3 +218,47 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Starter tooling and generated application state
+node_modules/
+.starter-sync.lock
+.azure/
+.azurite/
+**/local.settings.json
+**/.claude/settings.local.json
+**/.github/copilot/settings.local.json
+
+# Local environment variants; keep placeholder examples distributable
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+.npmrc
+.netrc
+*.pfx
+*.p12
+
+# Agent credentials, transcripts, and local caches, not shared adapters
+**/.claude/.credentials.json
+**/.claude/history.jsonl
+**/.claude/projects/
+**/.claude/debug/
+**/.codex/auth.json
+**/.codex/auth.json.*
+**/.codex/history.jsonl
+**/.codex/sessions/
+**/.codex/log/
+**/.codex/state_*.sqlite*
+**/.copilot/session-state/
+**/.copilot/logs/
+
+# Azurite's default on-disk databases and message/blob payloads
+__azurite_db_*.json
+__blobstorage__/
+__queuestorage__/
+
+# Interrupted atomic writes and OS metadata
+*.starter-*.tmp
+.DS_Store
+Thumbs.db
+Desktop.ini
