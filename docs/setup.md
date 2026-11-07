@@ -57,8 +57,14 @@ Reload your agent if requested and review its workspace, hook, and MCP trust
 prompts. Setup is not permission to approve them or to deploy.
 Claude uses an owned `CLAUDE.md` block; Codex and Copilot use an owned `AGENTS.md`
 block, with a scoped Copilot instruction pointing to it. Existing instructions
-are preserved. The guidance selects local skills rather than another plugin's
-same-named skills and opens Canvas only on an explicit request.
+are preserved. The guidance uses this starter's local skills by default:
+`azure-functions-hosted-skills` also owns deployment. External plugin and
+user/global skills require an explicit user request identifying the skill and
+source for the current task. A generic deployment request or a skill handoff
+does not authorize that switch. Missing local capabilities are reported rather
+than silently routed elsewhere. Built-in tools, CLI commands, and compatible
+reused Azure MCP remain available within approved actions; other plugins are
+not disabled. Canvas opens only on an explicit request.
 Missing optional Node-based MCP or telemetry is reported as deferred; it does
 not prevent authoring with the installed skills.
 An already working compatible Azure MCP can be reused without adding another
