@@ -48,7 +48,12 @@ with its actual local skill root. Install their instruction contributions:
 
 Use `# BEGIN hosted-skills-starter` and `# END hosted-skills-starter` markers.
 Merge blocks into existing files, not over them. Read the local `SKILL.md` paths
-from this guidance instead of invoking another plugin's same-named skills.
+from this guidance. Use only this starter's local skills by default, including
+`azure-functions-hosted-skills` for deployment. External plugin or user/global
+skills require an explicit user request identifying the skill and source for
+the current task, not a generic deployment request or a skill handoff.
+Report missing local capabilities instead of silently falling back. This does
+not disable built-in tools, CLI commands, or compatible reused Azure MCP.
 Canvas is separate and opens only when the user explicitly asks to open it.
 
 ## Merge existing files, do not reset them

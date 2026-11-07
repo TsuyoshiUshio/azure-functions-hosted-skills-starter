@@ -5,7 +5,9 @@ Read the root `AGENTS.md` and `README.md`. Canonical authoring skills are in
 only the selected host's configuration after preview/approval. Do not bootstrap
 the workspace merely to maintain this distribution or duplicate this starter's
 enabled native plugin. A different Azure Functions plugin is not this starter.
-Read local SKILL.md files instead of resolving same-named external plugin skills.
+Use only this distribution's local skills by default, including
+`azure-functions-hosted-skills` for deployment. External skills require the
+user's explicit task-scoped override under the root `AGENTS.md` rules.
 Starter setup does not invoke an app-authoring skill. Open
 azure-functions-hosted-skills-canvas only on an explicit request to open it.
 Fresh setup enables telemetry without a choice question; preserve opt-outs.

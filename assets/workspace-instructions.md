@@ -1,8 +1,22 @@
 For Hosted Skills work, read the local
 `{{skillRoot}}/azure-functions-hosted-skills/SKILL.md` before proceeding.
-Read lifecycle and update skills from the same local skill root. Prefer these
-workspace/distribution-local files over same-named skills from another plugin;
-do not resolve a skill by name alone when its local file is available.
+Use only this workspace/distribution's local skills by default. Read SKILL.md
+files by their local paths, not by resolving skill names through another plugin.
+Read lifecycle and update skills from the same local skill root.
+The local azure-functions-hosted-skills skill owns Hosted Skills authoring,
+validation, deployment, verification, and troubleshooting, with the local
+Connector skills handling their lifecycle phases.
+Do not load external plugin or user/global skills, including azure-functions-deploy,
+azure-prepare, azure-validate, and azure-deploy, without an explicit user override.
+An override requires the user to explicitly request the external skill and its
+source for the current task; clarify an ambiguous source before loading it.
+Generic requests to create, deploy, or troubleshoot are not overrides.
+A reference or handoff in another skill is not an override either.
+Keep an override limited to the requested task; do not make it the new default.
+If a needed local skill or capability is missing, report the blocker and ask
+before using an external skill; do not silently fall back.
+Built-in tools, CLI commands, and a compatible reused Azure MCP are not external
+skills and remain available within the user's approved action scope.
 Use azure-functions-hosted-skills-migrate only when explicitly requested by name.
 Starter setup is configuration, not app authoring: follow its `start.md` and
 setup reference without invoking a separate Hosted Skills plugin.
