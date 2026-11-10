@@ -3,21 +3,23 @@
 Read `README.md`. This is a distribution of development-time authoring skills,
 not a Function App or maintained Dev Container.
 
-For initial setup, follow `start.md` and `docs/agent-setup.md`. Node is optional:
-use the script when available, or apply a reviewed agent-led merge from the
-locked host blueprints and satisfy the same DoD. Preserve opt-outs, clean owned
-staging, and finish with creation/migration prompt examples. Do not install
+For initial setup, follow `start.md`: select the OS and actual coding agent from
+the execution context, run the matching remote installer once with JSON output,
+and use its result for prerequisite guidance and the next authoring prompt.
+Do not clone, inspect locks, query MCP, or manually install assets first.
+For explicitly requested workspace-only integration without an app template,
+follow `docs/setup.md` and `docs/agent-setup.md`; Node is optional for that
+reviewed route. Preserve opt-outs and clean only owned staging. Do not install
 assets merely to maintain this distribution or duplicate an enabled installation
 of this starter. A different Azure Functions plugin is not this installation.
-Setup is configuration, not app authoring: do not invoke another plugin's
+Setup applies the requested baseline, not AI customization: do not invoke another plugin's
 same-named Hosted Skills skill to perform it. Open
 azure-functions-hosted-skills-canvas only when the user explicitly asks to open
 that canvas; a Hosted Skills or scheduled-agent request alone is not consent.
 
-For an explicitly requested new app with the cached template/fast bootstrap,
-use `start.md`'s fast path and `docs/bootstrap.md` instead. This optional route
-applies a pinned sample and one cached authoring skill to a new destination,
-without Node or MCP; it does not install the six-skill workspace integration.
+The default bootstrap applies a pinned sample and one cached authoring skill in
+the intended current app directory, without Node or MCP; it does not install
+the six-skill workspace integration. See `docs/bootstrap.md` for details.
 Do not install both routes in one workspace. Maintain the cache independently
 of `skills.lock.json`; preserve its byte hashes and upstream licenses.
 

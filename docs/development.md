@@ -1,9 +1,13 @@
 # Maintainer and architecture guide
 
 The [README](../README.md) is the customer entry point. Keep implementation
-details here, and keep the agent-led contract in [start.md](../start.md) and
-[agent-setup.md](agent-setup.md). Node is optional for agent-led onboarding;
-the deterministic installer and synchronization tooling need Node.js 22.13+.
+details here. [start.md](../start.md) selects the execution OS/agent and runs the
+same remote cached-template installer as the README, once with JSON output.
+It uses that report for prerequisite guidance and the authoring handoff, without
+source staging, MCP discovery, or manual file application by the agent.
+The separate no-template workspace contract is in [setup.md](setup.md) and
+[agent-setup.md](agent-setup.md). Node is optional for agent-led workspace setup;
+the workspace installer and synchronization tooling need Node.js 22.13+.
 There are no npm dependencies to install.
 
 ## Distribution and workspace assets
@@ -20,8 +24,10 @@ The subset contains:
 | `azure-functions-connector-validate` | Contract and downstream side-effect checks |
 | `skills-update` | Preview latest or SHA-pinned skill updates |
 
-The three Connector skills are required dependencies. The full upstream plugin,
-application template, Dev Container, and Codespaces environment are not bundled.
+The three Connector skills are required dependencies of that six-skill subset.
+The separate bootstrap cache bundles one authoring skill and the pinned official
+sample template; see [bootstrap.md](bootstrap.md). The full upstream plugin,
+Dev Container, and Codespaces environment are not bundled.
 The upstream MIT license accompanies the plugin and installed workspace.
 
 `scripts/host-config.mjs` renders native plugin manifests and inactive
@@ -52,7 +58,7 @@ project instructions.
 Workspace guidance names the local skill paths to disambiguate same-named
 external plugins. Canvas opens only on an explicit request, never just because
 the user mentions Hosted Skills, a timer, or an agent. The entry prompt also
-identifies setup as configuration. Documents cannot force a host's routing
+distinguishes baseline setup from AI customization. Documents cannot force a host's routing
 before it reads them; external plugin routing may need its own correction.
 
 ## Installer and merge behavior

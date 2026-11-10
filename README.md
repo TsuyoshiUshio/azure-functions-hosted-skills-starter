@@ -14,12 +14,12 @@ Paste this into your coding agent:
 
 ```text
 Read https://aka.ms/hosted-skills-starter and set up
-Azure Functions Hosted Skills in this workspace.
-This is workspace setup, not app creation. Do not open a Canvas.
+Azure Functions Hosted Skills with the cached template in this directory.
+Use the one-liner for your OS and coding agent. Do not open a Canvas.
 ```
 
-Your agent reviews existing files and sets up only what it needs.
-**Node.js is optional for agent-led setup.** Nothing is deployed to Azure.
+Your agent selects the matching one-liner and reads its prerequisite report.
+**No Node.js required for bootstrap.** The app is not run or deployed.
 
 Then build a weekly AI briefing:
 > Use azure-functions-hosted-skills to create a weekly Microsoft AI briefing.
@@ -27,7 +27,7 @@ Then build a weekly AI briefing:
 > using official Microsoft sources, include source links, and post it to an
 > existing Teams thread. Show a plan first; do not deploy or send messages yet.
 
-Or migrate an existing automation (example):
+With the workspace integration or plugin, migrate an automation (example):
 > Use azure-functions-hosted-skills-migrate to migrate my GitHub Actions workflow
 > at `.github/workflows/weekly-releases.yml`: every Friday at 09:00 JST, it reads
 > new GitHub releases and posts a Teams digest. Preserve its repository list,
@@ -93,8 +93,7 @@ No tools are installed; nothing is deployed.
 
 These commands execute downloaded code. See [bootstrap details](docs/bootstrap.md)
 for SHA pinning, checks, prerequisites, and sample limitations.
-For pre-merge testing, use the [PR trial commands](https://github.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/pull/4).
-For an **existing workspace without app creation**, use Method 1 or the
+For an **existing workspace without app creation**, use the
 [reviewed workspace setup scripts](docs/setup.md#one-line-terminal-setup).
 Use one setup method per workspace.
 

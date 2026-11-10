@@ -1,9 +1,12 @@
 # Agent-led setup reference
 
-Use this recipe when Node is unavailable, or when an existing file needs a
-reviewed merge beyond the deterministic installer's supported formats.
+Use this recipe only for explicitly requested no-template workspace integration,
+when Node is unavailable or an existing file needs a reviewed merge beyond the
+deterministic workspace installer's supported formats.
 It is the same setup contract, not an instruction to install Node.
-Read this file from the exact distribution snapshot selected by `start.md`.
+Read this file from the exact distribution snapshot selected by
+[docs/setup.md](setup.md#agent-led-workspace-integration), not during the default
+one-liner bootstrap in `start.md`.
 
 ## Source and destinations
 
@@ -130,7 +133,7 @@ tool is available, state what remains unverified rather than claiming the DoD.
 
 ## Verification, cleanup, and celebration
 
-Use the Definition of done in `start.md`. Parse configuration with an available
+Use the Definition of done in `docs/setup.md`. Parse configuration with an available
 native parser where possible, inspect skill names and relative references, and
 check each copied asset against the inventory. Verify that only one starter
 hook contributes to each event and that repeat setup does not add duplicates.
@@ -141,7 +144,7 @@ by this setup. Never remove a supplied source checkout, installed runtime/state,
 or unrelated user data. Keep and report backups still needed for recovery.
 
 Finish in the user's language with the prominent completion message and both
-creation and migration prompts from `start.md`. Distinguish skills ready for
+creation and migration prompts from `README.md`. Distinguish skills ready for
 authoring from optional deferred MCP/telemetry, and from pending reload/trust.
 Report a reused MCP separately; do not imply its configuration is portable to
 another host when it is provided only by the current host.
