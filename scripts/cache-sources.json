@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "ai-hosted-skills-python",
+  "version": "0.1.0",
+  "template": {
+    "repository": "Azure-Samples/functions-daily-blog-hosted-skills-azd",
+    "commit": "b7cb7e49b4e2d78d8bc8e33887a32b14024b57e0",
+    "catalogRef": "refs/tags/v1.0.3"
+  },
+  "skill": {
+    "repository": "Azure/azure-functions-skills",
+    "commit": "4189ee9b811912e7149927efdd406a9ca71052eb",
+    "path": "templates/skills/azure-functions-hosted-skills"
+  }
+}
