@@ -380,13 +380,15 @@ test('README provides one-copy latest-main commands for each agent and OS', () =
     const powershell = snippets[0][2];
     const shell = snippets[1][2];
     assert.ok(powershell.includes(`${repository}/install.ps1`));
-    assert.ok(powershell.endsWith(`-Destination .\\my-hosted-skill -Agent ${agent}`));
+    assert.ok(powershell.endsWith(`-Destination . -Agent ${agent}`));
     assert.ok(shell.includes(`${repository}/install.sh`));
-    assert.ok(shell.endsWith(`--destination ./my-hosted-skill --agent ${agent})`));
+    assert.ok(shell.endsWith(`--destination . --agent ${agent})`));
     assert.ok(shell.includes('trap \'rm -f "$installer"\' EXIT'));
     assert.doesNotMatch(content, /<PUBLISHED_COMMIT_SHA>|-Ref |--ref |[Aa]gent all/);
   }
   assert.ok(oneLiners.includes('new app with its template applied'));
+  assert.ok(oneLiners.includes('**current directory**'));
+  assert.ok(!oneLiners.includes('my-hosted-skill'));
   assert.ok(oneLiners.includes('existing workspace without app creation'));
   assert.ok(oneLiners.includes('docs/bootstrap.md'));
 });

@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Destination = (Join-Path (Get-Location) 'my-hosted-skill'),
+    [string]$Destination = (Get-Location).Path,
     [string]$Agent,
     [switch]$Check,
     [switch]$Json

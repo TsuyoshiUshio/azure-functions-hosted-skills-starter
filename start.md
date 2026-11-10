@@ -5,7 +5,8 @@
 When the user explicitly requests a **new app with the cached template** or the
 **fast bootstrap**, use the deterministic route in [docs/bootstrap.md](docs/bootstrap.md)
 before environment discovery or manual file generation. Run `bootstrap.ps1` or
-`bootstrap.sh` once with the approved new destination and the actual current
+`bootstrap.sh` once in the intended app directory (the default destination)
+unless the user explicitly selects another path, with the actual current
 coding agent (`copilot`, `claude`, or `codex`), adding `-Json` / `--json`. Ask
 which agent only if genuinely unknown. Use `all` only when explicitly requested
 for multiple agents; do not silently fall back to it. For remote bootstrap,
