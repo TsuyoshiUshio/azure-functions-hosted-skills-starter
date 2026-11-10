@@ -8,7 +8,7 @@ Works with **GitHub Copilot, Claude Code, and Codex**.
 
 ## Getting started
 
-### Ask your agent to set up your workspace (Recommended)
+### Method 1: Ask your agent with start.md (Recommended)
 
 Paste this into your coding agent:
 
@@ -33,7 +33,71 @@ Or migrate an existing automation (example):
 > new GitHub releases and posts a Teams digest. Preserve its repository list,
 > schedule, and destination. Show a migration plan; do not deploy or send messages yet.
 
-### Prefer a plugin?
+### Method 2: Run a one-liner
+
+Create a **new app with its template applied**, without Node or development MCP.
+Choose your agent and OS. Commands use **latest main** and create `my-hosted-skill`.
+Open it in your agent. No tools are installed; nothing is deployed.
+
+<details>
+<summary>GitHub Copilot</summary>
+
+**Windows (PowerShell)**
+
+```powershell
+& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.ps1'))) -Destination .\my-hosted-skill -Agent copilot
+```
+
+**macOS / Linux**
+
+```sh
+(set -eu; installer=$(mktemp); trap 'rm -f "$installer"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.sh' -o "$installer"; sh "$installer" --destination ./my-hosted-skill --agent copilot)
+```
+
+</details>
+
+<details>
+<summary>Claude Code</summary>
+
+**Windows (PowerShell)**
+
+```powershell
+& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.ps1'))) -Destination .\my-hosted-skill -Agent claude
+```
+
+**macOS / Linux**
+
+```sh
+(set -eu; installer=$(mktemp); trap 'rm -f "$installer"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.sh' -o "$installer"; sh "$installer" --destination ./my-hosted-skill --agent claude)
+```
+
+</details>
+
+<details>
+<summary>Codex</summary>
+
+**Windows (PowerShell)**
+
+```powershell
+& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.ps1'))) -Destination .\my-hosted-skill -Agent codex
+```
+
+**macOS / Linux**
+
+```sh
+(set -eu; installer=$(mktemp); trap 'rm -f "$installer"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.sh' -o "$installer"; sh "$installer" --destination ./my-hosted-skill --agent codex)
+```
+
+</details>
+
+These commands execute downloaded code. See [bootstrap details](docs/bootstrap.md)
+for SHA pinning, checks, prerequisites, and sample limitations.
+For pre-merge testing, use the [PR trial commands](https://github.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/pull/4).
+For an **existing workspace without app creation**, use Method 1 or the
+[reviewed workspace setup scripts](docs/setup.md#one-line-terminal-setup).
+Use one setup method per workspace.
+
+### Method 3: Install a plugin
 
 Choose your agent. Use either plugin installation or workspace setup, not both.
 
@@ -69,13 +133,6 @@ codex plugin add hosted-skills-starter@hosted-skills-starter
 ```
 
 </details>
-
-## Terminal setup
-
-Prefer a script? See [PowerShell or Bash one-line setup](docs/setup.md#one-line-terminal-setup).
-It previews changes and asks before applying. Without Node.js, use agent-led setup above.
-
-Want a **new app with its template applied**, without Node or MCP? Use [fast bootstrap](docs/bootstrap.md), by one-liner or `start.md`'s fast path.
 
 ## Developer guide
 

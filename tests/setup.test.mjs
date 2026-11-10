@@ -339,13 +339,13 @@ test('staging distribution references and packaged guidance use the current sour
 
 test('customer README stays brief and links the supplied banner and focused guides', () => {
   const readme = read(root, 'README.md');
-  assert.ok(readme.split('\n').length <= 100);
+  assert.ok(readme.split('\n').length <= 180);
   assert.ok(readme.split(/\s+/).length <= 600);
   const shortcut = readme.indexOf('https://aka.ms/hosted-skills-starter ');
-  assert.ok(shortcut >= 0 && shortcut < readme.indexOf('Prefer a plugin'));
+  assert.ok(shortcut >= 0 && shortcut < readme.indexOf('### Method 2:'));
   assert.match(readme, /Node.js is optional/);
   assert.match(readme, /azure-functions-hosted-skills-migrate/);
-  const sections = ['## Getting started', '## Terminal setup', '## Developer guide',
+  const sections = ['## Getting started', '### Method 1:', '### Method 2:', '### Method 3:', '## Developer guide',
     '<summary>Disable telemetry</summary>'].map(text => readme.indexOf(text));
   assert.ok(sections.every(index => index >= 0));
   assert.deepEqual(sections, [...sections].sort((a, b) => a - b));
@@ -365,6 +365,30 @@ test('customer README stays brief and links the supplied banner and focused guid
   for (const term of ['JSONC', 'deferred', 'preservedHashes', 'SHA-256', 'cleanup', 'Recovery']) {
     assert.ok(guide.toLowerCase().includes(term.toLowerCase()), term);
   }
+});
+
+test('README provides one-copy latest-main commands for each agent and OS', () => {
+  const readme = read(root, 'README.md');
+  const oneLiners = readme.slice(readme.indexOf('### Method 2:'), readme.indexOf('### Method 3:'));
+  const entries = [...oneLiners.matchAll(/<details>\s*<summary>([^<]+)<\/summary>([\s\S]*?)<\/details>/g)];
+  assert.deepEqual(entries.map(([, title]) => title), ['GitHub Copilot', 'Claude Code', 'Codex']);
+  const repository = 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main';
+  for (const [index, [, , content]] of entries.entries()) {
+    const agent = ['copilot', 'claude', 'codex'][index];
+    const snippets = [...content.matchAll(/```(\w+)\n([^\n]+)\n```/g)];
+    assert.deepEqual(snippets.map(([, language]) => language), ['powershell', 'sh']);
+    const powershell = snippets[0][2];
+    const shell = snippets[1][2];
+    assert.ok(powershell.includes(`${repository}/install.ps1`));
+    assert.ok(powershell.endsWith(`-Destination .\\my-hosted-skill -Agent ${agent}`));
+    assert.ok(shell.includes(`${repository}/install.sh`));
+    assert.ok(shell.endsWith(`--destination ./my-hosted-skill --agent ${agent})`));
+    assert.ok(shell.includes('trap \'rm -f "$installer"\' EXIT'));
+    assert.doesNotMatch(content, /<PUBLISHED_COMMIT_SHA>|-Ref |--ref |[Aa]gent all/);
+  }
+  assert.ok(oneLiners.includes('new app with its template applied'));
+  assert.ok(oneLiners.includes('existing workspace without app creation'));
+  assert.ok(oneLiners.includes('docs/bootstrap.md'));
 });
 
 test('README, agent handoff, and terminal launchers share concrete creation and migration prompts', () => {
