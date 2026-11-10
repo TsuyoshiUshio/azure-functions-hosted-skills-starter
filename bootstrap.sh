@@ -2,7 +2,7 @@
 set -eu
 
 destination=./my-hosted-skill
-agent=all
+agent=
 check=false
 json=false
 fail() {
@@ -24,6 +24,12 @@ while [ "$#" -gt 0 ]; do
         *) usage >&2; fail "Unknown argument: $1" ;;
     esac
 done
+if [ -z "$agent" ]; then
+    [ "$json" = false ] || fail 'Specify --agent copilot, claude, codex, or all with --json.'
+    printf 'Coding agent (copilot / claude / codex / all): ' >&2
+    IFS= read -r agent || fail 'Agent selection required; pass --agent explicitly for noninteractive use.'
+    agent=${agent%"$(printf '\r')"}
+fi
 case "$agent" in all|copilot|claude|codex) ;; *) fail "Unknown agent: $agent" ;; esac
 [ -n "$destination" ] || fail 'Destination must not be empty.'
 for tool in awk cmp dirname mkdir mktemp cat rm rmdir; do
@@ -155,6 +161,8 @@ if [ "$json" = true ]; then
     printf '{"schemaVersion":1,"mode":"%s","destination":"%s","agent":"%s",' "$mode" "$escaped_target" "$agent"
     printf '"templateSource":"repository-cache","template":'
     cat "$cache/app/.hosted-skills-template.json"
+    printf ',"starterSource":'
+    if [ -f "$cache/installer-source.json" ]; then cat "$cache/installer-source.json"; else printf null; fi
     printf ',"authorReady":%s,"filesCreated":%s,"filesMissing":%s,"toolsDetected":{' "$ready" "$created" "$missing"
     separator=
     for tool in python3 python func azurite azd az; do
@@ -165,6 +173,10 @@ if [ "$json" = true ]; then
 else
     printf 'Author-ready: %s\nDestination: %s\n' "$ready" "$target"
     printf 'Agent: %s; source: repository-cache; created: %s; missing: %s\n' "$agent" "$created" "$missing"
+    if [ -f "$cache/installer-source.json" ]; then
+        printf 'Starter source: '
+        cat "$cache/installer-source.json"
+    fi
     printf 'Optional tools on PATH (presence only; versions, services and authentication not verified):\n'
     for tool in python3 python func azurite azd az; do
         printf '  %s: %s\n' "$tool" "$(detected "$tool")"

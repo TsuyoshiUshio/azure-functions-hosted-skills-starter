@@ -5,8 +5,13 @@
 When the user explicitly requests a **new app with the cached template** or the
 **fast bootstrap**, use the deterministic route in [docs/bootstrap.md](docs/bootstrap.md)
 before environment discovery or manual file generation. Run `bootstrap.ps1` or
-`bootstrap.sh` once with the approved new destination and selected agent (or
-`all` if unknown), adding `-Json` / `--json`. Check the exit code and `authorReady`.
+`bootstrap.sh` once with the approved new destination and the actual current
+coding agent (`copilot`, `claude`, or `codex`), adding `-Json` / `--json`. Ask
+which agent only if genuinely unknown. Use `all` only when explicitly requested
+for multiple agents; do not silently fall back to it. For remote bootstrap,
+omit `Ref` / `--ref` to resolve latest main once to a fixed commit SHA; keep an
+explicit SHA when the user requests a pinned version. Check the exit code,
+`authorReady`, and the reported `starterSource` for remote installs.
 On a conflict, preserve files and stop; never force an overwrite or choose a
 different destination silently. Read the generated `AGENTS.md` and installed
 skill before continuing with app authoring. Local runs and deployment remain

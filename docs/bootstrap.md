@@ -7,14 +7,14 @@ route per workspace to avoid duplicate installations.
 
 ## Two ways to try it
 
-From a checkout or extracted archive of this PR, run:
+From a checkout or extracted archive, select your agent (Copilot shown):
 
 ```powershell
-.\bootstrap.ps1 -Destination .\my-hosted-skill -Agent all
+.\bootstrap.ps1 -Destination .\my-hosted-skill -Agent copilot
 ```
 
 ```sh
-sh ./bootstrap.sh --destination ./my-hosted-skill --agent all
+sh ./bootstrap.sh --destination ./my-hosted-skill --agent copilot
 ```
 
 Or ask the coding agent:
@@ -25,7 +25,11 @@ Or ask the coding agent:
 
 Both entrypoints apply the same cache and prerequisite checks. Open the reported
 destination in the agent after setup and describe what you want to build.
-Use `copilot`, `claude`, or `codex` instead of `all` for one agent.
+Choose `copilot`, `claude`, or `codex` to match your coding agent. Omit the
+agent argument for an interactive selection; `all` is an explicit opt-in for
+multiple agents, never the default. With `-Json` / `--json`, specify the agent
+so automation cannot wait on a prompt. `start.md` uses the actual running agent
+and asks only when unknown.
 
 | Selection | Skill root | Instructions |
 | --- | --- | --- |
@@ -69,20 +73,37 @@ automatic rollback/deletion occurs; fix the cause and rerun.
 ## Remote one-liners
 
 These installers download the public
-`TsuyoshiUshio/azure-functions-hosted-skills-starter` repository at a required
-full 40-character commit SHA, then run the same bootstrap. Replace the placeholder
-with this PR's published head SHA; merging is not required. Review the pinned
-code first if your policy requires it. Temporary distribution files are removed;
-the generated app remains. POSIX download also needs `curl`, `tar` and GitHub
-HTTPS access. Tokens and `gh` are not required for this public distribution.
+`TsuyoshiUshio/azure-functions-hosted-skills-starter` repository. The default is
+**latest main**, with no ref argument required. The installer resolves main
+once through GitHub's API, validates its full commit SHA, and downloads only
+that immutable snapshot. The actual repository, requested ref and resolved SHA
+are recorded in `.hosted-skills-bootstrap.json` and the `starterSource` report.
+Lookup failures, invalid responses and API rate limits stop installation;
+there is no fallback to another version. No GitHub token is required.
+
+After this PR is merged, use these one-liners (Copilot shown):
 
 ```powershell
-$ref = '<PUBLISHED_COMMIT_SHA>'; & ([scriptblock]::Create((Invoke-RestMethod "https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/$ref/install.ps1"))) -Ref $ref -Destination .\my-hosted-skill -Agent all
+& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.ps1'))) -Destination .\my-hosted-skill -Agent copilot
 ```
 
 ```sh
-ref='<PUBLISHED_COMMIT_SHA>'; (set -eu; installer=$(mktemp); trap 'rm -f "$installer"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' "https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/$ref/install.sh" -o "$installer"; sh "$installer" --ref "$ref" --destination ./my-hosted-skill --agent all)
+(set -eu; installer=$(mktemp); trap 'rm -f "$installer"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.sh' -o "$installer"; sh "$installer" --destination ./my-hosted-skill --agent copilot)
 ```
+
+Change `copilot` to `claude` or `codex`, or omit the agent argument to select it
+interactively. To test before merge or reproduce a specific version, download
+the installer from that full commit SHA instead of `main` and add
+`-Ref <40-character-SHA>` / `--ref <40-character-SHA>` to its arguments.
+An explicit SHA bypasses the main lookup. `main` is also accepted explicitly;
+arbitrary branch/tag names are not accepted.
+
+These commands execute downloaded code. Use the SHA-pinned route if your policy
+requires reviewing an immutable installer. Temporary distribution files are removed;
+the generated app remains. POSIX download also needs `curl`, `tar` and GitHub
+HTTPS access. API lookup uses `curl` on POSIX and built-in web cmdlets on Windows,
+not `jq`, Node, Python or `gh`. Local checkout bootstrap needs no lookup and
+reports `starterSource: null`; template/skill provenance is still recorded.
 
 ## Cache contract and maintenance
 
@@ -103,7 +124,8 @@ destination path. Both OS entrypoints verify selected bytes before applying.
 `.gitattributes` preserves cached bytes across checkouts. Future scenario-neutral
 template packages can use the same contract with an external resolver. V1 uses
 `repository-cache` explicitly; a separate remote template resolver is not yet
-implemented, and there is no silent latest-version lookup or fallback.
+implemented. Latest-main resolution updates the starter distribution, not the
+upstream template or skill pins within its reviewed cache.
 
 Maintainers can move the existing cache aside and run
 `python scripts/build-cache.py` to generate a reviewed replacement from pinned

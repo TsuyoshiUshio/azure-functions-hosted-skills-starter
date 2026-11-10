@@ -1,8 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$Destination = (Join-Path (Get-Location) 'my-hosted-skill'),
-    [ValidateSet('all', 'copilot', 'claude', 'codex')]
-    [string]$Agent = 'all',
+    [string]$Agent,
     [switch]$Check,
     [switch]$Json
 )
@@ -48,6 +47,11 @@ function Get-Digest([string]$Path) {
 }
 
 try {
+    if (-not $Agent) {
+        if ($Json) { throw 'Specify -Agent copilot, claude, codex, or all with -Json.' }
+        $Agent = Read-Host 'Coding agent (copilot / claude / codex / all)'
+    }
+    if ($Agent -notin @('copilot', 'claude', 'codex', 'all')) { throw "Unknown agent: $Agent" }
     $cache = Join-Path $PSScriptRoot 'cache'
     $manifest = Join-Path $cache 'files.tsv'
     if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) {
@@ -128,6 +132,9 @@ try {
         destination = $target
         agent = $Agent
         templateSource = 'repository-cache'
+        starterSource = $(if (Test-Path -LiteralPath (Join-Path $cache 'installer-source.json')) {
+            Get-Content -LiteralPath (Join-Path $cache 'installer-source.json') -Raw | ConvertFrom-Json
+        } else { $null })
         template = (Get-Content -LiteralPath (Join-Path $cache 'app\.hosted-skills-template.json') -Raw | ConvertFrom-Json)
         authorReady = $ready
         filesCreated = $(if ($Check) { 0 } else { $missing.Count })
@@ -142,6 +149,7 @@ try {
         Write-Output "Author-ready: $ready"
         Write-Output "Destination: $target"
         Write-Output "Agent: $Agent; source: repository-cache; created: $($report.filesCreated); missing: $($report.filesMissing)"
+        if ($null -ne $report.starterSource) { Write-Output "Starter commit: $($report.starterSource.commit)" }
         Write-Output 'Optional tools on PATH (presence only; versions, services and authentication not verified):'
         foreach ($tool in $detected.Keys) { Write-Output "  ${tool}: $($detected[$tool])" }
         Write-Output 'Local run and deployment: not verified. No tools installed, services started or Azure resources created.'
