@@ -17,12 +17,19 @@
     "skills-update": "bootstrap-installation-v1"
   },
   "files": {
-    "azure-functions-connector-create/references/connection-lifecycle.md": "c2e4f179f65945183651d9c5831a3335f606d45fdf7c229a9e6584736237df46",
+    "LICENSE": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
     "azure-functions-connector-create/SKILL.md": "d53e647ec534f08b0e54837d643782ed9a188327e89b32c36b52c48d183ed10b",
-    "azure-functions-connector-mcp/references/metadata-to-mcp.md": "43f88da41a0b690c393caefb5a69f1ac8af9540f9e0770ae4ef2419d27bdb456",
+    "azure-functions-connector-create/references/connection-lifecycle.md": "c2e4f179f65945183651d9c5831a3335f606d45fdf7c229a9e6584736237df46",
     "azure-functions-connector-mcp/SKILL.md": "e2d1b3561be0cfb0f61bfb3b8911f03edc098f2430295685a2d4c5a2255b72ba",
-    "azure-functions-connector-validate/references/deployment-gates.md": "898fd9dc6bdc5b863fe4a0b5610d7cbf170ed2b22700e254832ef090dc508981",
+    "azure-functions-connector-mcp/references/metadata-to-mcp.md": "43f88da41a0b690c393caefb5a69f1ac8af9540f9e0770ae4ef2419d27bdb456",
     "azure-functions-connector-validate/SKILL.md": "b3b9cf40fe236ec606b3cbe629ce3b26debe6d65dbebe88703d203e2f9bccc24",
+    "azure-functions-connector-validate/references/deployment-gates.md": "898fd9dc6bdc5b863fe4a0b5610d7cbf170ed2b22700e254832ef090dc508981",
+    "azure-functions-hosted-skills-migrate/SKILL.md": "f7f1684d90645c38417b339dd567177d1100816327896a553dc0308aa07d145e",
+    "azure-functions-hosted-skills-migrate/references/conversion-support.md": "cbb0effb70b5273dc825aa63157a5c50207a03b68567a5273131250c15730175",
+    "azure-functions-hosted-skills-migrate/references/definition-of-done.md": "bd648369006e5de6105568fb30e68568e690c500915c67e928f010d12b2d5d4b",
+    "azure-functions-hosted-skills-migrate/references/dependent-skills.md": "717e74c1a9459123eabbacd85bf9890a594b0693a5dc5b474fd05c49b00f62a1",
+    "azure-functions-hosted-skills-migrate/references/script-conversion.md": "d62084205e872e5049b03d2eaae07081fa3c240266943f33782246542799ffe4",
+    "azure-functions-hosted-skills/SKILL.md": "9529f5ac51d828b67d44e21ec3246e3a5e6fdcfed2722bde81ae98b14f5881a1",
     "azure-functions-hosted-skills/assets/infra/app/trigger-config.bicep": "49ab80a90758b48142601ad2a7bc324d01148260c76b1e7599d38144f1c8bc76",
     "azure-functions-hosted-skills/references/abbreviations.json": "74072e48e30f663b5203c228feec260e6b8c22fe46fff219ba8285ee96c45175",
     "azure-functions-hosted-skills/references/agent-authoring.md": "9af06e261beb66bb1f3c5926c470c6e27e21e3c32229a2c7a21ff98288b8f5f4",
@@ -43,14 +50,7 @@
     "azure-functions-hosted-skills/references/tools-and-skills.md": "a338de9490e46bfea32236ebdf0dda2679b57d0fa5056a14b156ca779af4a32b",
     "azure-functions-hosted-skills/references/triggers.md": "e3026481b97f9f40bf7a115f0ec3cec19de25292d508f7d6a831c46c28b8f11a",
     "azure-functions-hosted-skills/references/troubleshooting.md": "7a07f01aab460fdedc9da97d217f449fc35a9b3ffa93b6d717634b660c7f700d",
-    "azure-functions-hosted-skills/SKILL.md": "9529f5ac51d828b67d44e21ec3246e3a5e6fdcfed2722bde81ae98b14f5881a1",
-    "azure-functions-hosted-skills-migrate/references/conversion-support.md": "cbb0effb70b5273dc825aa63157a5c50207a03b68567a5273131250c15730175",
-    "azure-functions-hosted-skills-migrate/references/definition-of-done.md": "bd648369006e5de6105568fb30e68568e690c500915c67e928f010d12b2d5d4b",
-    "azure-functions-hosted-skills-migrate/references/dependent-skills.md": "717e74c1a9459123eabbacd85bf9890a594b0693a5dc5b474fd05c49b00f62a1",
-    "azure-functions-hosted-skills-migrate/references/script-conversion.md": "d62084205e872e5049b03d2eaae07081fa3c240266943f33782246542799ffe4",
-    "azure-functions-hosted-skills-migrate/SKILL.md": "f7f1684d90645c38417b339dd567177d1100816327896a553dc0308aa07d145e",
-    "LICENSE": "c2cfccb812fe482101a8f04597dfc5a9991a6b2748266c47ac91b6a5aae15383",
-    "skills-update/references/bootstrap-installation.md": "be834cc893f4e54185b52d277d487cb08ccbcef12c1cb3826e30d95acde4b449",
-    "skills-update/SKILL.md": "06527b9599f04b3fe2d75e848b8aeaa9f4fbfb0736c44e4e03f4b78b14515363"
+    "skills-update/SKILL.md": "06527b9599f04b3fe2d75e848b8aeaa9f4fbfb0736c44e4e03f4b78b14515363",
+    "skills-update/references/bootstrap-installation.md": "be834cc893f4e54185b52d277d487cb08ccbcef12c1cb3826e30d95acde4b449"
   }
 }

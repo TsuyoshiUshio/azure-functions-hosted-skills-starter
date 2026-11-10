@@ -31,6 +31,12 @@ def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def files_in(directory):
+    # Path ordering is case-insensitive on Windows only; sort by POSIX text instead.
+    return sorted((file for file in directory.rglob("*") if file.is_file()),
+                  key=lambda file: file.relative_to(directory).as_posix())
+
+
 def assert_regular_tree(directory):
     if directory.is_symlink() or not directory.is_dir():
         raise ValueError(f"Expected a regular directory: {directory}")
@@ -126,7 +132,7 @@ def stage_skills(root, staged, sources):
         "source": sources["skills"],
         "adaptations": {"skills-update": "bootstrap-installation-v1"},
         "files": {file.relative_to(skill).as_posix(): digest(file)
-                  for file in sorted(skill.rglob("*")) if file.is_file()},
+                  for file in files_in(skill)},
     }
     (staged / "skills.json").write_text(
         json.dumps(record, indent=2) + "\n", encoding="utf-8", newline="\n")
@@ -144,15 +150,13 @@ def write_manifest(staged):
         rows.append((scope, digest(source), source.relative_to(staged).as_posix(), destination))
 
     app = staged / "app"
-    for file in sorted(app.rglob("*")):
-        if file.is_file():
-            destination = file.relative_to(app).as_posix()
-            add("common", file, ".gitignore" if destination == "gitignore.template" else destination)
+    for file in files_in(app):
+        destination = file.relative_to(app).as_posix()
+        add("common", file, ".gitignore" if destination == "gitignore.template" else destination)
     add("common", staged / "skills.json", ".hosted-skills-skills.json")
     for scope, prefix in (("agents", ".agents/skills"), ("claude", ".claude/skills")):
-        for file in sorted((staged / "skill").rglob("*")):
-            if file.is_file():
-                add(scope, file, f"{prefix}/{file.relative_to(staged / 'skill').as_posix()}")
+        for file in files_in(staged / "skill"):
+            add(scope, file, f"{prefix}/{file.relative_to(staged / 'skill').as_posix()}")
     for scope, source, destination in (
         ("common", "AGENTS.md", "AGENTS.md"),
         ("claude", "CLAUDE.md", "CLAUDE.md"),

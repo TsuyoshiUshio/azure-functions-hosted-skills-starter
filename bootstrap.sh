@@ -144,7 +144,7 @@ while IFS="$tab" read -r scope digest source output; do
                 telemetry_enabled=$(LC_ALL=C awk '{
                     document=document $0 "\n"
                 } END {
-                    if (document !~ /^[ \t\r\n]*\{[ \t\r\n]*"enabled"[ \t\r\n]*:[ \t\r\n]*(true|false)[ \t\r\n]*\}[ \t\r\n]*$/) exit 1
+                    if (document !~ /^[ \t\r\n]*[{][ \t\r\n]*"enabled"[ \t\r\n]*:[ \t\r\n]*(true|false)[ \t\r\n]*[}][ \t\r\n]*$/) exit 1
                     if (document ~ /:[ \t\r\n]*true/) printf "true"; else printf "false"
                 }' "$target/$output") ||
                     fail 'Invalid existing telemetry preference; preserve it and reconcile before retrying.'
@@ -200,7 +200,7 @@ if [ "$json" = true ]; then
     printf '{"schemaVersion":1,"mode":"%s","destination":"%s","agent":"%s",' "$mode" "$escaped_target" "$agent"
     printf '"skills":'
     awk -F '\t' 'BEGIN {printf "["}
-        $4 ~ /^\.(agents|claude)\/skills\/[^/]+\/SKILL[.]md$/ {
+        $4 ~ /^\.(agents|claude)\/skills\/[^\/]+\/SKILL[.]md$/ {
             split($4, parts, "/")
             if (!seen[parts[3]]++) {
                 printf "%s\"%s\"", separator, parts[3]
