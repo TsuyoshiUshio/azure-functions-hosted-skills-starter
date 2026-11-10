@@ -25,8 +25,12 @@ The subset contains:
 | `skills-update` | Preview latest or SHA-pinned skill updates |
 
 The three Connector skills are required dependencies of that six-skill subset.
-The separate bootstrap cache bundles one authoring skill and the pinned official
-sample template; see [bootstrap.md](bootstrap.md). The full upstream plugin,
+The bootstrap cache snapshots those same six canonical skills and the pinned
+official sample template; see [bootstrap.md](bootstrap.md). It installs complete
+references/assets plus the selected host's locked telemetry hooks and SDK-free
+runtime, but no workspace MCP. Node is needed only when those hooks execute.
+Only its cached updater receives a documented bootstrap-layout handoff; canonical
+plugin skill files and their lock remain unchanged. The full upstream plugin,
 Dev Container, and Codespaces environment are not bundled.
 The upstream MIT license accompanies the plugin and installed workspace.
 
@@ -156,6 +160,8 @@ Events are `HostedSkillsStarterSetup` (successful changed scripted setup),
 `AzureFunctionsSkillsPluginExecuted` (selected skill/tool/file categories), and
 `azure_deployment_observed` (approved successful deploy/provision observation).
 Agent-led no-Node setup does not invent an equivalent event or delivery.
+Cached-template bootstrap installs hooks/preferences but sends no setup event,
+even when Node is present. It does not invoke the collector during setup.
 
 No prompts, raw arguments, contents, absolute paths, environment names, resource/
 subscription IDs, or session IDs are transmitted. Deployment environment names

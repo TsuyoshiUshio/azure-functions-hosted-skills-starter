@@ -4,6 +4,7 @@ param(
     [string]$Ref = 'main',
     [string]$Destination = (Get-Location).Path,
     [string]$Agent,
+    [switch]$NoTelemetry,
     [switch]$Json
 )
 
@@ -46,7 +47,7 @@ try {
         "common`t$digest`tinstaller-source.json`t.hosted-skills-bootstrap.json`n",
         (New-Object Text.UTF8Encoding($false)))
     $global:LASTEXITCODE = 0
-    & (Join-Path $source 'bootstrap.ps1') -Destination $Destination -Agent $Agent -Json:$Json
+    & (Join-Path $source 'bootstrap.ps1') -Destination $Destination -Agent $Agent -Json:$Json -NoTelemetry:$NoTelemetry
     if ($LASTEXITCODE) { exit $LASTEXITCODE }
 } catch {
     [Console]::Error.WriteLine("Download/bootstrap failed: $($_.Exception.Message)")

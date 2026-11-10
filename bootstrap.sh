@@ -5,12 +5,14 @@ destination=.
 agent=
 check=false
 json=false
+no_telemetry=false
+telemetry_enabled=true
 fail() {
     printf 'Bootstrap failed: %s\n' "$*" >&2
     exit 2
 }
 usage() {
-    printf '%s\n' 'Usage: sh bootstrap.sh [--destination PATH] [--agent all|copilot|claude|codex] [--check] [--json]'
+    printf '%s\n' 'Usage: sh bootstrap.sh [--destination PATH] [--agent all|copilot|claude|codex] [--check] [--json] [--no-telemetry]'
 }
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -20,6 +22,7 @@ while [ "$#" -gt 0 ]; do
             shift 2 ;;
         --check) check=true; shift ;;
         --json) json=true; shift ;;
+        --no-telemetry) no_telemetry=true; telemetry_enabled=false; shift ;;
         --help) usage; exit 0 ;;
         *) usage >&2; fail "Unknown argument: $1" ;;
     esac
@@ -106,6 +109,10 @@ no_link() {
     done
 }
 selected() {
+    case "$1" in
+        preference-on) [ "$no_telemetry" = false ]; return ;;
+        preference-off) [ "$no_telemetry" = true ]; return ;;
+    esac
     [ "$1" = common ] || [ "$agent" = all ] || [ "$1" = "$agent" ] ||
         { [ "$1" = agents ] && { [ "$agent" = copilot ] || [ "$agent" = codex ]; }; }
 }
@@ -116,7 +123,7 @@ trap 'exit 2' HUP INT TERM
 : > "$work/missing.tsv"
 : > "$work/cache.sha256"
 # Validate the whole manifest grammar before interpreting any paths.
-awk -F '\t' 'NF!=4 || $1 !~ /^(common|agents|copilot|claude|codex)$/ ||
+awk -F '\t' 'NF!=4 || $1 !~ /^(common|agents|copilot|claude|codex|preference-on|preference-off)$/ ||
     length($2)!=64 || $2 ~ /[^0-9a-f]/ {exit 1}' "$cache/files.tsv" ||
     fail 'Invalid cache manifest row.'
 while IFS="$tab" read -r scope digest source output; do
@@ -128,6 +135,24 @@ while IFS="$tab" read -r scope digest source output; do
     [ -f "$cache/$source" ] || fail "Missing cache file: $source"
     printf '%s  %s\n' "$digest" "$source" >> "$work/cache.sha256"
     printf '%s\t%s\t%s\t%s\n' "$scope" "$digest" "$source" "$output" >> "$work/selected.tsv"
+    case "$scope" in
+        preference-on|preference-off)
+            [ "$output" = .hosted-skills-starter/telemetry.config.json ] ||
+                fail 'Invalid telemetry preference destination.'
+            if [ -e "$target/$output" ]; then
+                [ -f "$target/$output" ] || fail 'Telemetry preference is not a regular file.'
+                telemetry_enabled=$(LC_ALL=C awk '{
+                    document=document $0 "\n"
+                } END {
+                    if (document !~ /^[ \t\r\n]*\{[ \t\r\n]*"enabled"[ \t\r\n]*:[ \t\r\n]*(true|false)[ \t\r\n]*\}[ \t\r\n]*$/) exit 1
+                    if (document ~ /:[ \t\r\n]*true/) printf "true"; else printf "false"
+                }' "$target/$output") ||
+                    fail 'Invalid existing telemetry preference; preserve it and reconcile before retrying.'
+                [ "$no_telemetry" = false ] || [ "$telemetry_enabled" = false ] ||
+                    fail 'Existing telemetry preference is enabled; review changing it to enabled: false before retrying --no-telemetry.'
+                continue
+            fi ;;
+    esac
     if [ -e "$target/$output" ]; then
         [ -f "$target/$output" ] && cmp -s "$cache/$source" "$target/$output" ||
             fail "Conflicting file; nothing was applied: $output. Choose a new destination or reconcile it yourself."
@@ -173,17 +198,27 @@ if [ "$json" = true ]; then
     mode=apply
     [ "$check" = false ] || mode=check
     printf '{"schemaVersion":1,"mode":"%s","destination":"%s","agent":"%s",' "$mode" "$escaped_target" "$agent"
+    printf '"skills":'
+    awk -F '\t' 'BEGIN {printf "["}
+        $4 ~ /^\.(agents|claude)\/skills\/[^/]+\/SKILL[.]md$/ {
+            split($4, parts, "/")
+            if (!seen[parts[3]]++) {
+                printf "%s\"%s\"", separator, parts[3]
+                separator=","
+            }
+        }
+        END {printf "],"}' "$work/selected.tsv"
     printf '"templateSource":"repository-cache","template":'
     cat "$cache/app/.hosted-skills-template.json"
     printf ',"starterSource":'
     if [ -f "$cache/installer-source.json" ]; then cat "$cache/installer-source.json"; else printf null; fi
     printf ',"authorReady":%s,"filesCreated":%s,"filesMissing":%s,"toolsDetected":{' "$ready" "$created" "$missing"
     separator=
-    for tool in python3 python func azurite azd az; do
+    for tool in python3 python func azurite azd az node; do
         printf '%s"%s":%s' "$separator" "$tool" "$(detected "$tool")"
         separator=,
     done
-    printf '},"localRun":"not-verified","deployment":"not-verified"}\n'
+    printf '},"telemetry":{"preferenceEnabled":%s,"runtime":"not-verified"},"localRun":"not-verified","deployment":"not-verified"}\n' "$telemetry_enabled"
 else
     printf 'Author-ready: %s\nDestination: %s\n' "$ready" "$target"
     printf 'Agent: %s; source: repository-cache; created: %s; missing: %s\n' "$agent" "$created" "$missing"
@@ -192,9 +227,10 @@ else
         cat "$cache/installer-source.json"
     fi
     printf 'Optional tools on PATH (presence only; versions, services and authentication not verified):\n'
-    for tool in python3 python func azurite azd az; do
+    for tool in python3 python func azurite azd az node; do
         printf '  %s: %s\n' "$tool" "$(detected "$tool")"
     done
+    printf 'Telemetry preference enabled: %s; hook execution and delivery: not verified.\n' "$telemetry_enabled"
     printf 'Local run and deployment: not verified. No tools installed, services started or Azure resources created.\n'
     if [ "$ready" = true ]; then
         printf 'Open the destination in your coding agent and describe the Hosted Skill you want to build.\n'

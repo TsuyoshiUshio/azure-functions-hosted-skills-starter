@@ -1,7 +1,7 @@
 # Set up Azure Functions Hosted Skills
 
 Use the same remote one-liner as README Method 2 to apply the cached application
-template and one authoring skill in the current directory. Let the installer do
+template and all six repository skills in the current directory. Let the installer do
 the work; do not reconstruct its steps with agent tools.
 
 Only when the user explicitly requests **workspace setup without an app
@@ -31,6 +31,9 @@ Briefly state the selected agent, OS, target, and that the cached sample and
 instructions will be applied without overwriting conflicting files. Honor the
 host's execution/download permissions. The setup request authorizes this
 bootstrap, not tool installation, authentication, local runs, or deployment.
+Fresh setup enables the selected host's telemetry hooks without a choice question.
+Preserve opt-outs. Only for an explicit disable request, add `-NoTelemetry` /
+`--no-telemetry` to the same installer command; do not add another setup step.
 
 Run exactly one matching command with JSON output (Copilot shown). Do not first
 clone the repository, inspect skills/locks/blueprints, query MCP, run a separate
@@ -66,6 +69,8 @@ utility gets its OS-specific installation guidance, not an automatic install.
 
 On success, confirm `destination`, `agent`, and `starterSource` match the
 selected target/agent/source, allowing OS path aliases for the same directory.
+The `skills` list reports the selected six skills, including their references
+and assets; no second installation or discovery scan is needed.
 Read `toolsDetected` to give only relevant missing
 prerequisite guidance in the same response:
 
@@ -75,6 +80,7 @@ prerequisite guidance in the same response:
 | `func` is false | For local execution, link to [Azure Functions Core Tools installation](https://learn.microsoft.com/azure/azure-functions/functions-run-local#install-the-azure-functions-core-tools). |
 | `azurite` is false | For local Storage emulation, link to [Azurite options](https://learn.microsoft.com/azure/storage/common/storage-use-azurite). CLI absence does not rule out an existing container or another configured Storage endpoint. |
 | `azd` or `az` is false | Mention only for deployment preparation: [Azure Developer CLI](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd) / [Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli). Do not block authoring. |
+| `node` is false | Telemetry hooks are installed but inactive until Node.js 22.13+ is available to the agent. Bootstrap and authoring are not blocked. |
 
 These are command-presence checks, not version, service, credential, or model
 validation. Do not run follow-up probes during setup or claim Local-run-ready
@@ -82,7 +88,8 @@ or Deploy-ready: `localRun` and `deployment` remain `not-verified`.
 Missing optional tools do not undo Author-ready. Give installation guidance,
 but do not install Node or other tools automatically. No dependencies, hosts,
 containers, sign-ins, Connector consent, commits, or publication are authorized.
-The bootstrap adds no MCP or telemetry hooks and preserves existing opt-outs.
+The bootstrap adds no MCP. `telemetry` reports the local preference, not verified
+hook execution or delivery; ancestor/environment opt-outs still take precedence.
 Do not open azure-functions-hosted-skills-canvas unless the user explicitly asks.
 
 Finish immediately in the user's language with **Hosted Skills setup complete!**,
@@ -94,8 +101,9 @@ daily-blog sample; adapt/remove sample behavior before running or deploying.
 Show this copyable prompt; do not execute it or start app customization during
 setup. On the next authoring request, read the generated `AGENTS.md` and the
 installed local authoring skill, not another plugin's same-named skill.
-Migration and Connector lifecycle skills belong to the separate workspace/plugin
-integration; do not claim this one-skill bootstrap installed them.
+Migration, the three Connector lifecycle skills, and `skills-update` are installed
+alongside the authoring skill. Migration still requires an explicit use request
+by name; listing or installing it does not authorize running it.
 
 > Use azure-functions-hosted-skills to create a weekly Microsoft AI briefing.
 > Every Monday at 08:00 JST, summarize Microsoft AI news from the past seven days

@@ -5,6 +5,7 @@ ref=main
 destination=.
 agent=
 json=false
+telemetry_option=
 fail() { printf 'Download/bootstrap failed: %s\n' "$*" >&2; exit 2; }
 while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -13,6 +14,7 @@ while [ "$#" -gt 0 ]; do
             case "$1" in --ref) ref=$2 ;; --destination) destination=$2 ;; --agent) agent=$2 ;; esac
             shift 2 ;;
         --json) json=true; shift ;;
+        --no-telemetry) telemetry_option=--no-telemetry; shift ;;
         *) fail "Unknown argument: $1" ;;
     esac
 done
@@ -59,7 +61,7 @@ else
 fi
 printf 'common\t%s\tinstaller-source.json\t.hosted-skills-bootstrap.json\n' "$digest" >> "$source/cache/files.tsv"
 if [ "$json" = true ]; then
-    sh "$source/bootstrap.sh" --destination "$destination" --agent "$agent" --json
+    sh "$source/bootstrap.sh" --destination "$destination" --agent "$agent" --json ${telemetry_option:+"$telemetry_option"}
 else
-    sh "$source/bootstrap.sh" --destination "$destination" --agent "$agent"
+    sh "$source/bootstrap.sh" --destination "$destination" --agent "$agent" ${telemetry_option:+"$telemetry_option"}
 fi
