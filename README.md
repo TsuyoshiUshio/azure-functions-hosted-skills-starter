@@ -16,7 +16,7 @@ Paste this into your coding agent:
 Read https://aka.ms/hosted-skills-starter and set up
 Azure Functions Hosted Skills with the cached template in this directory.
 Use the one-liner for your OS and coding agent. Do not open a Canvas.
-Load no other skills; follow only that file.
+Load no other skills until setup is reported; then use the skills it added to this directory.
 ```
 
 Your agent runs the matching one-liner and checks prerequisites.
@@ -38,7 +38,6 @@ Or explicitly request migration:
 Create a **new app with its template applied**, without Node or development MCP.
 Includes all six repository skills with their references and assets.
 Telemetry hooks are enabled by default; Node is needed only for hook execution.
-Run in your app directory using your agent/OS command.
 Commands use **latest main** and apply files directly to the **current directory**.
 No tools are installed; nothing is deployed.
 

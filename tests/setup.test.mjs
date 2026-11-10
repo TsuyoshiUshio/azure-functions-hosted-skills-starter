@@ -388,7 +388,7 @@ test('staging distribution references and packaged guidance use the current sour
   assert.equal(read(root, 'plugin/CLAUDE.md'), '@AGENTS.md\n');
   const readme = read(root, 'README.md');
   assert.match(readme, /with the cached template in this directory/);
-  assert.match(readme, /Use the one-liner for your OS and coding agent\. Do not open a Canvas\.\nLoad no other skills; follow only that file\./);
+  assert.match(readme, /Use the one-liner for your OS and coding agent\. Do not open a Canvas\.\nLoad no other skills until setup is reported; then use the skills it added to this directory\./);
   assert.ok(read(root, 'docs/development.md').includes(`${repository}/issues/1`));
 });
 
