@@ -94,18 +94,39 @@ Do not open azure-functions-hosted-skills-canvas unless the user explicitly asks
 
 Finish immediately in the user's language with **Hosted Skills setup complete!**,
 the selected agent/destination and recorded source SHA, and any missing-tool
-guidance. If no relevant tools are missing, go straight to the next-step prompt.
+guidance. If no relevant tools are missing, go straight to the intent question.
 Mention a reload only if the host needs it. The v1 template is the official
 daily-blog sample; adapt/remove sample behavior before running or deploying.
 
-Show this copyable prompt; do not execute it or start app customization during
-setup. On the next authoring request, read the generated `AGENTS.md` and the
-installed local authoring skill, not another plugin's same-named skill.
-Migration, the three Connector lifecycle skills, and `skills-update` are installed
-alongside the authoring skill. Migration still requires an explicit use request
-by name; listing or installing it does not authorize running it.
+## Ask what to build, then hand off
+
+In the same response, ask one question: what the user wants to build with
+Hosted Skills, either a new capability or a migration of an existing skill,
+agent, or automation. Offer these examples as inspiration, not defaults to execute:
 
 > Use azure-functions-hosted-skills to create a weekly Microsoft AI briefing.
 > Every Monday at 08:00 JST, summarize Microsoft AI news from the past seven days
 > using official Microsoft sources, include source links, and post it to an
 > existing Teams thread. Show a plan first; do not deploy or send messages yet.
+
+> Use azure-functions-hosted-skills-migrate to migrate my GitHub Actions workflow
+> at `.github/workflows/weekly-releases.yml`: every Friday at 09:00 JST, it reads
+> new GitHub releases and posts a Teams digest. Preserve its repository list,
+> schedule, and destination. Show a migration plan; do not deploy or send messages yet.
+
+Do not ask further setup questions or start customization before the answer.
+When the user answers, setup is over: read the generated `AGENTS.md` and the
+matching installed local skill, not another plugin's same-named skill, and let
+that skill own planning, clarifying questions, approvals, and implementation.
+Do not reimplement its workflow from this file.
+
+- **New capability:** use `azure-functions-hosted-skills`.
+- **Migrating an existing skill, agent, or automation:** use
+  `azure-functions-hosted-skills-migrate`, which builds on the authoring skill.
+  It runs only when the user names it and asks to use it. If the answer
+  describes a migration without that request, do not start either skill; show
+  the answer rewritten as a copyable `Use azure-functions-hosted-skills-migrate
+  to ...` prompt and wait for the user to send it.
+
+The three Connector lifecycle skills and `skills-update` are installed alongside
+them; installing or listing a skill does not authorize running it.
