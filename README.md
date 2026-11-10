@@ -16,9 +16,10 @@ Paste this into your coding agent:
 Read https://aka.ms/hosted-skills-starter and set up
 Azure Functions Hosted Skills with the cached template in this directory.
 Use the one-liner for your OS and coding agent. Do not open a Canvas.
+Load no other skills; follow only that file.
 ```
 
-Your agent selects the matching one-liner and reads its prerequisite report.
+Your agent runs the matching one-liner and checks prerequisites.
 **No Node.js required for bootstrap.** The app is not run or deployed.
 Your agent then asks what to build, for example a weekly AI briefing:
 > Use azure-functions-hosted-skills to create a weekly Microsoft AI briefing.
@@ -26,7 +27,7 @@ Your agent then asks what to build, for example a weekly AI briefing:
 > using official Microsoft sources, include source links, and post it to an
 > existing Teams thread. Show a plan first; do not deploy or send messages yet.
 
-Or explicitly request migration of an automation (example):
+Or explicitly request migration:
 > Use azure-functions-hosted-skills-migrate to migrate my GitHub Actions workflow
 > at `.github/workflows/weekly-releases.yml`: every Friday at 09:00 JST, it reads
 > new GitHub releases and posts a Teams digest. Preserve its repository list,

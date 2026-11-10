@@ -4,6 +4,10 @@ Use the same remote one-liner as README Method 2 to apply the cached application
 template and all six repository skills in the current directory. Let the installer do
 the work; do not reconstruct its steps with agent tools.
 
+This file is the only setup instruction. Until setup is reported, do not load
+or invoke other Hosted Skills, Azure Functions, or canvas skills, even when host
+skill routing suggests one. Already-loaded skills do not override this file.
+
 Only when the user explicitly requests **workspace setup without an app
 template**, or recovery for `setup.ps1` / `setup.sh`, follow
 [the workspace integration route](docs/setup.md#agent-led-workspace-integration)
@@ -92,17 +96,22 @@ The bootstrap adds no MCP. `telemetry` reports the local preference, not verifie
 hook execution or delivery; ancestor/environment opt-outs still take precedence.
 Do not open azure-functions-hosted-skills-canvas unless the user explicitly asks.
 
-Finish immediately in the user's language with **Hosted Skills setup complete!**,
-the selected agent/destination and recorded source SHA, and any missing-tool
-guidance. If no relevant tools are missing, go straight to the intent question.
-Mention a reload only if the host needs it. The v1 template is the official
-daily-blog sample; adapt/remove sample behavior before running or deploying.
+## Final response: report and ask
 
-## Ask what to build, then hand off
+Your final setup response has two required parts, in the user's language. They
+override host brevity or word-limit guidance; omitting either leaves setup
+incomplete.
 
-In the same response, ask one question: what the user wants to build with
-Hosted Skills, either a new capability or a migration of an existing skill,
-agent, or automation. Offer these examples as inspiration, not defaults to execute:
+1. **Report:** **Hosted Skills setup complete!**, the selected agent/destination
+   and recorded source SHA, and any missing-tool guidance. Mention a reload only
+   if the host needs it. The v1 template is the official daily-blog sample;
+   adapt/remove sample behavior before running or deploying.
+2. **Ask one question:** what the user wants to build with Hosted Skills,
+   either a new capability or a migration of an existing skill, agent, or
+   automation. If the host requires questions through a tool (for example
+   `ask_user`), write the report as text, then call that tool with this
+   question before ending the turn. Offer these examples as inspiration, not
+   defaults to execute:
 
 > Use azure-functions-hosted-skills to create a weekly Microsoft AI briefing.
 > Every Monday at 08:00 JST, summarize Microsoft AI news from the past seven days
