@@ -57,8 +57,6 @@ target=$(printf '%s\n' "$target" | awk -F / '{
     printf "/"
     for (i=1;i<=n;i++) printf "%s%s", a[i], (i<n ? "/" : "")
 }')
-case "$target" in "$root"|"$cache"|"$cache"/*|/) fail 'Choose a destination outside the starter root, its ancestors, and cache.' ;; esac
-case "$root/" in "$target/"*) fail 'Destination must not contain the starter distribution.' ;; esac
 newline='
 '
 tab=$(printf '\t')
@@ -67,6 +65,22 @@ case "$target" in *"$newline"*|*"$tab"*|*"$carriage_return"*) fail 'Control char
 printf '%s' "$target" | LC_ALL=C awk '/[[:cntrl:]]/ {exit 1}' ||
     fail 'Control character in destination.'
 [ ! -f "$target" ] || fail "Destination is a file: $target"
+# Canonicalize the existing parent without creating a missing destination.
+# This handles /var -> /private/var and Windows short-name directory aliases.
+parent=$target
+suffix=
+while [ ! -d "$parent" ]; do
+    [ ! -e "$parent" ] && [ ! -L "$parent" ] ||
+        fail "Destination parent is not a directory: $parent"
+    suffix=/${parent##*/}$suffix
+    parent=${parent%/*}
+    [ -n "$parent" ] || parent=/
+done
+physical_target=$(CDPATH= cd -- "$parent" && pwd -P) || fail "Cannot resolve destination parent: $parent"
+physical_target=${physical_target%/}$suffix
+[ -n "$physical_target" ] || physical_target=/
+case "$physical_target" in "$root"|"$cache"|"$cache"/*|/) fail 'Choose a destination outside the starter root, its ancestors, and cache.' ;; esac
+case "$root/" in "$physical_target/"*) fail 'Destination must not contain the starter distribution.' ;; esac
 safe_path() {
     case "$1" in ''|/*|*/|*[!A-Za-z0-9._/-]*|*//*|.|..|./*|../*|*/./*|*/../*|*/.|*/..) fail "Unsafe manifest path: $1" ;; esac
 }

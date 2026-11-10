@@ -23,16 +23,22 @@ function Assert-NoLink([string]$Root, [string]$Relative) {
     $segments = @('') + @($Relative.Split('/'))
     for ($index = 0; $index -lt $segments.Count; $index++) {
         $segment = $segments[$index]
-        if ($segment) { $current = Join-Path $current $segment }
-        $item = Get-Item -LiteralPath $current -Force -ErrorAction SilentlyContinue
-        if ($null -ne $item -and ($item.Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        if ($segment) { $current = [IO.Path]::Combine($current, $segment) }
+        $attributes = Get-PathAttributes $current
+        if ($null -ne $attributes -and ($attributes -band [IO.FileAttributes]::ReparsePoint)) {
             throw "Symbolic links and junctions are not supported in apply paths: $current"
         }
         if ($index -lt $segments.Count - 1 -and
-            $null -ne $item -and -not $item.PSIsContainer) {
+            $null -ne $attributes -and -not ($attributes -band [IO.FileAttributes]::Directory)) {
             throw "A parent path is not a directory: $current"
         }
     }
+}
+
+function Get-PathAttributes([string]$Path) {
+    try { return [IO.File]::GetAttributes($Path) }
+    catch [IO.FileNotFoundException] { return $null }
+    catch [IO.DirectoryNotFoundException] { return $null }
 }
 
 function Get-Digest([string]$Path) {
@@ -52,23 +58,25 @@ try {
         $Agent = Read-Host 'Coding agent (copilot / claude / codex / all)'
     }
     if ($Agent -notin @('copilot', 'claude', 'codex', 'all')) { throw "Unknown agent: $Agent" }
-    $cache = Join-Path $PSScriptRoot 'cache'
-    $manifest = Join-Path $cache 'files.tsv'
-    if (-not (Test-Path -LiteralPath $manifest -PathType Leaf)) {
+    $cache = [IO.Path]::Combine($PSScriptRoot, 'cache')
+    $manifest = [IO.Path]::Combine($cache, 'files.tsv')
+    if (-not [IO.File]::Exists($manifest)) {
         throw 'Missing cache/files.tsv. Use the complete starter archive or checkout.'
     }
     $target = [IO.Path]::GetFullPath($Destination)
     if ($target -match '[\x00-\x1f]') { throw 'Control character in destination.' }
-    if (Test-Path -LiteralPath $target -PathType Leaf) {
+    if ([IO.File]::Exists($target)) {
         throw "Destination is a file: $target"
     }
     # Do not let an apply modify its own distribution.
-    $sourceRoot = [IO.Path]::GetFullPath($PSScriptRoot).TrimEnd('\', '/')
-    if ($target.TrimEnd('\', '/') -eq $sourceRoot -or
-        $sourceRoot.StartsWith($target.TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar,
-            [StringComparison]::OrdinalIgnoreCase) -or
-        $target.StartsWith($cache + [IO.Path]::DirectorySeparatorChar,
-            [StringComparison]::OrdinalIgnoreCase) -or $target -eq $cache) {
+    $separator = [IO.Path]::DirectorySeparatorChar
+    $comparison = if ($separator -eq '\') { [StringComparison]::OrdinalIgnoreCase } else { [StringComparison]::Ordinal }
+    $sourceRoot = [IO.Path]::GetFullPath($PSScriptRoot).TrimEnd($separator)
+    $targetRoot = $target.TrimEnd($separator)
+    if ([string]::Equals($targetRoot, $sourceRoot, $comparison) -or
+        $sourceRoot.StartsWith($targetRoot + $separator, $comparison) -or
+        $target.StartsWith($cache + $separator, $comparison) -or
+        [string]::Equals($targetRoot, $cache, $comparison)) {
         throw 'Choose a destination outside the starter root, its ancestors, and cache.'
     }
     $entries = @()
@@ -92,14 +100,14 @@ try {
         $destinations[$relativeTarget] = $true
         Assert-NoLink $cache $relativeSource
         Assert-NoLink $target $relativeTarget
-        $source = Join-Path $cache $relativeSource
-        $output = Join-Path $target $relativeTarget
-        if (-not (Test-Path -LiteralPath $source -PathType Leaf) -or
+        $source = [IO.Path]::Combine($cache, $relativeSource)
+        $output = [IO.Path]::Combine($target, $relativeTarget)
+        if (-not [IO.File]::Exists($source) -or
             (Get-Digest $source) -ne $digest) {
             throw "Cache integrity check failed: $relativeSource"
         }
-        $exists = Test-Path -LiteralPath $output
-        if ($exists -and (-not (Test-Path -LiteralPath $output -PathType Leaf) -or
+        $exists = $null -ne (Get-PathAttributes $output)
+        if ($exists -and (-not [IO.File]::Exists($output) -or
             (Get-Digest $output) -ne $digest)) {
             $conflicts += $relativeTarget
         }
@@ -112,7 +120,7 @@ try {
     $missing = @($entries | Where-Object { -not $_.Exists })
     if (-not $Check) {
         foreach ($entry in $missing) {
-            $null = [IO.Directory]::CreateDirectory((Split-Path -Parent $entry.Target))
+            $null = [IO.Directory]::CreateDirectory([IO.Path]::GetDirectoryName($entry.Target))
             # CreateNew protects a concurrent edit from being overwritten.
             $stream = [IO.File]::Open($entry.Target, [IO.FileMode]::CreateNew, [IO.FileAccess]::Write)
             try {
@@ -132,10 +140,10 @@ try {
         destination = $target
         agent = $Agent
         templateSource = 'repository-cache'
-        starterSource = $(if (Test-Path -LiteralPath (Join-Path $cache 'installer-source.json')) {
-            Get-Content -LiteralPath (Join-Path $cache 'installer-source.json') -Raw | ConvertFrom-Json
+        starterSource = $(if ([IO.File]::Exists([IO.Path]::Combine($cache, 'installer-source.json'))) {
+            [IO.File]::ReadAllText([IO.Path]::Combine($cache, 'installer-source.json')) | ConvertFrom-Json
         } else { $null })
-        template = (Get-Content -LiteralPath (Join-Path $cache 'app\.hosted-skills-template.json') -Raw | ConvertFrom-Json)
+        template = ([IO.File]::ReadAllText([IO.Path]::Combine($cache, 'app', '.hosted-skills-template.json')) | ConvertFrom-Json)
         authorReady = $ready
         filesCreated = $(if ($Check) { 0 } else { $missing.Count })
         filesMissing = $(if ($Check) { $missing.Count } else { 0 })

@@ -180,7 +180,13 @@ class BootstrapContract:
         self.assertFalse(self.target.exists())
 
     def test_source_and_ancestor_destinations_rejected(self):
-        for target in (self.source, self.source / "cache", self.base):
+        targets = [self.source, self.source / "cache", self.base]
+        if self.engine == "sh" and os.name != "nt":
+            alias = self.base / "parent alias"
+            alias.symlink_to(self.base, target_is_directory=True)
+            targets.extend((alias / self.source.name, alias / self.source.name / "cache",
+                            alias, alias / self.source.name / "cache" / "new app"))
+        for target in targets:
             with self.subTest(target=target):
                 self.assertEqual(self.run_bootstrap(destination=target).returncode, 2)
                 self.assertFalse((target / "azure.yaml").exists())
@@ -196,6 +202,16 @@ class BootstrapContract:
         self.assertEqual(self.run_bootstrap().returncode, 2)
         self.assertEqual(list(outside.iterdir()), [])
         self.assertFalse((self.target / "azure.yaml").exists())
+
+    def test_target_root_link_prevents_all_writes(self):
+        outside = self.base / "outside"
+        outside.mkdir()
+        try:
+            self.target.symlink_to(outside, target_is_directory=True)
+        except OSError as error:
+            self.skipTest(f"Symlink creation unavailable: {error}")
+        self.assertEqual(self.run_bootstrap().returncode, 2)
+        self.assertEqual(list(outside.iterdir()), [])
 
     def test_minimal_posix_environment_and_shasum(self):
         if self.engine != "sh" or os.name == "nt":
@@ -221,10 +237,22 @@ class BootstrapContract:
     def test_json_destination_escaping(self):
         if os.name == "nt":
             self.skipTest("Quote and backslash filename characters require POSIX")
-        target = self.base / 'app "quoted" \\ path'
-        report = self.report(self.run_bootstrap(destination=target))
-        self.assertEqual(report["destination"], str(target))
-        self.assertTrue((target / "azure.yaml").exists())
+        for name in ('app "quoted" \\ path', "app with trailing backslash\\"):
+            with self.subTest(name=name):
+                target = self.base / name
+                report = self.report(self.run_bootstrap("-Check", destination=target), expected=1)
+                self.assertEqual(report["destination"], str(target))
+                self.assertFalse(target.exists())
+                report = self.report(self.run_bootstrap(destination=target))
+                self.assertEqual(report["destination"], str(target))
+                self.assertTrue((target / "azure.yaml").exists())
+                again = self.report(self.run_bootstrap(destination=target))
+                self.assertEqual(again["filesCreated"], 0)
+                inspection = self.report(self.run_bootstrap("-Check", destination=target))
+                self.assertTrue(inspection["authorReady"])
+                (target / "azure.yaml").write_text("preserve this edit")
+                self.assertEqual(self.run_bootstrap(destination=target).returncode, 2)
+                self.assertEqual((target / "azure.yaml").read_text(), "preserve this edit")
 
     def run_offline_installer(self, ref=PIN, response=PIN, fail_lookup=False, agent="codex"):
         folder = f"azure-functions-hosted-skills-starter-{PIN}"

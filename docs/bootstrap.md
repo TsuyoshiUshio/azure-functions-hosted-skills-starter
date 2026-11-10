@@ -65,6 +65,10 @@ sign-ins performed, Azure resources provisioned, or applications deployed.
 
 An unchanged rerun creates zero files. Different existing files, file/directory
 collisions, and links/junctions within apply paths are rejected before writes.
+The shell resolves existing destination parents for its distribution guard,
+including macOS `/var` aliases and Windows short paths, without creating files.
+PowerShell uses literal .NET filesystem paths so valid POSIX filename characters
+such as backslashes are preserved during apply, rerun, and inspection.
 Unrelated files remain. There is no force option. Check mode compares the cached
 baseline, not a customized app's correctness; do not reapply over an edited app.
 Disk or permission failures during copying may leave a partial new app. No
@@ -135,5 +139,6 @@ Run bootstrap contracts with `python -m unittest discover -s tests -v`.
 Python is maintenance/test tooling only. The tests exercise available POSIX,
 PowerShell 7, and Windows PowerShell engines; require particular engines with
 `BOOTSTRAP_ENGINES=sh,pwsh,powershell` and optionally `BOOTSTRAP_SH`.
-GitHub Actions runs on Windows, macOS and Linux. Tests cover layouts, exact bytes,
+GitHub Actions runs once per pull request update and on pushes to `main`, across
+Windows, macOS and Linux. Tests cover layouts, exact bytes,
 reruns, conflicts, corruption, traversal, links, and offline-mocked installation.
