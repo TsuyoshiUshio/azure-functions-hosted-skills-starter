@@ -22,10 +22,19 @@ Do not install both routes in one workspace. Maintain the cache independently
 of `skills.lock.json`; preserve its byte hashes and upstream licenses.
 
 Canonical skills live in `plugin/skills`; the local updater source is
-`skills/skills-update/SKILL.md`. Read these local SKILL.md files rather than
-resolving same-named skills through another installed plugin.
-Use `azure-functions-hosted-skills` for app
-authoring and the three Connector skills for their lifecycle handoffs.
+`skills/skills-update/SKILL.md`. Use only this workspace/distribution's local
+skills by default, reading SKILL.md files by their local paths.
+Use `azure-functions-hosted-skills` for app authoring, validation, deployment,
+verification, and troubleshooting, and the three local Connector skills for
+their lifecycle handoffs. Do not route deployment to external
+`azure-functions-deploy`, `azure-prepare`, `azure-validate`, or `azure-deploy`.
+External plugin or user/global skills require the user to explicitly request
+the skill and its source for the current task; clarify an ambiguous source.
+Generic create/deploy/troubleshoot requests and references or handoffs in skills
+are not overrides. Report missing local capabilities and ask before falling back.
+An override does not become the default for later tasks.
+Built-in tools, CLI commands, and compatible reused Azure MCP tools remain
+available within the approved action scope; do not disable other plugins.
 Use migration only when explicitly requested by name, never merely quoted.
 Generated app `src/skills` and `.agent.md` files belong to the runtime, not the
 coding-agent distribution.

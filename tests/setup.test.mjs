@@ -5,7 +5,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, 
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { applySetup, buildSetup, installationLock } from '../scripts/setup.mjs';
-import { agents, clientNames, hookCommand, skillDirectories, workspaceHostFiles } from '../scripts/host-config.mjs';
+import { agents, clientNames, hookCommand, hostFiles, skillDirectories, workspaceHostFiles } from '../scripts/host-config.mjs';
 import { hash } from '../scripts/update-skills.mjs';
 
 const root = resolve(import.meta.dirname, '..');
@@ -23,6 +23,21 @@ function put(directory, path, text) {
 }
 
 function read(directory, path) { return readFileSync(join(directory, path), 'utf8'); }
+
+function assertLocalSkillPolicy(instructions) {
+  const text = instructions.replace(/\s+/g, ' ');
+  assert.match(text, /Use only this workspace\/distribution's local skills by default/);
+  assert.match(text, /Read SKILL\.md files by their local paths/);
+  assert.match(text, /local azure-functions-hosted-skills skill owns Hosted Skills authoring, validation, deployment, verification, and troubleshooting/);
+  assert.match(text, /Do not load external plugin or user\/global skills, including azure-functions-deploy, azure-prepare, azure-validate, and azure-deploy, without an explicit user override/);
+  assert.match(text, /explicitly request the external skill and its source for the current task/);
+  assert.match(text, /clarify an ambiguous source before loading it/);
+  assert.match(text, /Generic requests to create, deploy, or troubleshoot are not overrides/);
+  assert.match(text, /A reference or handoff in another skill is not an override either/);
+  assert.match(text, /Keep an override limited to the requested task/);
+  assert.match(text, /If a needed local skill or capability is missing, report the blocker and ask before using an external skill; do not silently fall back/);
+  assert.match(text, /Built-in tools, CLI commands, and a compatible reused Azure MCP are not external skills/);
+}
 
 for (const agent of agents) {
   test(`${agent} setup previews without writes, installs only its host, and is idempotent`, t => {
@@ -53,7 +68,7 @@ for (const agent of agents) {
 }
 
 for (const agent of agents) {
-  test(`${agent} native instructions preserve user content and select local skills without a Canvas handoff`, t => {
+  test(`${agent} native instructions preserve user content and require explicit external skill overrides`, t => {
     const directory = workspace(t);
     const path = agent === 'claude' ? 'CLAUDE.md' : 'AGENTS.md';
     const userRules = '# My project\n\nPreserve my existing instructions.\n';
@@ -64,7 +79,7 @@ for (const agent of agents) {
     assert.ok(instructions.startsWith(userRules));
     assert.ok(instructions.includes(`${skillDirectories[agent]}/azure-functions-hosted-skills/SKILL.md`));
     assert.equal(instructions.includes('{{skillRoot}}'), false);
-    assert.match(instructions, /Prefer these\s+workspace\/distribution-local files over same-named skills/);
+    assertLocalSkillPolicy(instructions);
     assert.match(instructions, /Open azure-functions-hosted-skills-canvas only when the user explicitly asks/);
     assert.match(instructions, /Fresh setup defaults telemetry to enabled without a telemetry-choice question/);
     assert.equal(JSON.parse(read(directory, '.hosted-skills-starter/telemetry.config.json')).enabled, true);
@@ -86,6 +101,21 @@ for (const agent of agents) {
     assert.equal(JSON.parse(read(directory, '.hosted-skills-starter/telemetry.config.json')).enabled, false);
   });
 }
+
+test('plugin and checked-in host instructions share the local-only skill boundary', () => {
+  const config = JSON.parse(read(root, 'starter.config.json'));
+  const generated = hostFiles(config);
+  const pluginInstructions = read(root, 'plugin/AGENTS.md');
+  assert.equal(pluginInstructions, generated.get('plugin/AGENTS.md'));
+  assertLocalSkillPolicy(pluginInstructions);
+  assert.equal(read(root, 'plugin/CLAUDE.md'), '@AGENTS.md\n');
+  for (const agent of agents) {
+    const path = `assets/setup/${agent}/${agent === 'claude' ? 'CLAUDE.md' : 'AGENTS.md'}`;
+    const instructions = read(root, path);
+    assert.equal(instructions, generated.get(path));
+    assertLocalSkillPolicy(instructions);
+  }
+});
 
 test('locally deleted native instructions or owned blocks require a reviewed merge', t => {
   for (const agent of agents) {

@@ -49,11 +49,22 @@ them into the user's project. Reviewed workspace setup installs the host-native
 instruction contribution; native plugin installation does not silently edit
 project instructions.
 
-Workspace guidance names the local skill paths to disambiguate same-named
-external plugins. Canvas opens only on an explicit request, never just because
-the user mentions Hosted Skills, a timer, or an agent. The entry prompt also
-identifies setup as configuration. Documents cannot force a host's routing
-before it reads them; external plugin routing may need its own correction.
+Workspace guidance selects only this starter's local skills by default, including
+Hosted Skills validation, deployment, verification, and troubleshooting. This
+boundary applies to differently named skills as well as same-named external
+plugins and user/global skills. External skills require an explicit user request
+identifying the skill and source for the current task; ambiguous sources need
+clarification. Generic deployment requests and skill references/handoffs do not
+authorize a switch, and an override does not become a lasting default. Missing
+local capabilities must be reported rather than silently routed elsewhere.
+Built-in tools, CLI commands, and compatible reused Azure MCP remain available
+within the approved action scope. This is a skill-selection policy, not a plugin
+uninstall, permissions change, or technical sandbox.
+
+Canvas opens only on an explicit request, never just because the user mentions
+Hosted Skills, a timer, or an agent. The entry prompt also identifies setup as
+configuration. Documents cannot force a host's routing before it reads them;
+native host enforcement and actual agent routing need separate verification.
 
 ## Installer and merge behavior
 

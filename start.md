@@ -105,8 +105,13 @@ Before calling setup complete, verify:
   references/assets, without another agent's adapters or duplicate plugin hooks.
 - Native workspace guidance is installed in CLAUDE.md or AGENTS.md, with the
   Copilot instruction entry point where applicable. It identifies the local
-  skill paths, prefers them over same-named external plugins, and opens Canvas
-  only on an explicit request. Preserve existing user instructions when merging.
+  skill paths and keeps Hosted Skills work, including deployment, with local
+  skills by default. External plugin or user/global skills require an explicit
+  user request identifying the skill and source for the current task. A generic
+  deployment request or a skill handoff is not an override. Built-in tools, CLI
+  commands, and compatible reused Azure MCP remain available within approved
+  actions. Canvas opens only on an explicit request. Preserve existing user
+  instructions when merging.
 - The upstream license is retained; source revision and actual installed hashes
   are recorded. Do not invent a successful script run or missing provenance.
 - Existing application files, credentials, instructions, MCP servers, hooks, and
