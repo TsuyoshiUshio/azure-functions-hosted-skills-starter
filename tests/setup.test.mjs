@@ -328,8 +328,12 @@ test('bootstrap handoff uses reported readiness and missing tools without claimi
   assert.match(prompt, /do not force, choose a different\s+target, retry automatically/i);
   assert.match(prompt, /do not install Node or other tools automatically/i);
   assert.match(prompt, /Hosted Skills setup complete!/);
-  assert.match(prompt, /go straight to the intent question/);
-  assert.match(prompt, /ask one question: what the user wants to build/);
+  assert.match(prompt, /Final response: report and ask/);
+  assert.match(prompt, /override host brevity or word-limit guidance/);
+  assert.match(prompt, /then call that tool with this\s+question before ending the turn/);
+  assert.match(prompt, /This file is the only setup instruction/);
+  assert.doesNotMatch(prompt, /Finish immediately/);
+  assert.match(prompt, /Ask one question:\*\* what the user wants to build/);
   assert.match(prompt, /let\s+that skill own planning, clarifying questions, approvals, and implementation/);
   assert.match(prompt, /Do not open azure-functions-hosted-skills-canvas unless the user explicitly asks/);
   assert.match(prompt, /all six repository skills/);
@@ -384,7 +388,7 @@ test('staging distribution references and packaged guidance use the current sour
   assert.equal(read(root, 'plugin/CLAUDE.md'), '@AGENTS.md\n');
   const readme = read(root, 'README.md');
   assert.match(readme, /with the cached template in this directory/);
-  assert.match(readme, /Use the one-liner for your OS and coding agent\. Do not open a Canvas\./);
+  assert.match(readme, /Use the one-liner for your OS and coding agent\. Do not open a Canvas\.\nLoad no other skills; follow only that file\./);
   assert.ok(read(root, 'docs/development.md').includes(`${repository}/issues/1`));
 });
 
