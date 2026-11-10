@@ -20,8 +20,7 @@ Use the one-liner for your OS and coding agent. Do not open a Canvas.
 
 Your agent selects the matching one-liner and reads its prerequisite report.
 **No Node.js required for bootstrap.** The app is not run or deployed.
-
-Then build a weekly AI briefing:
+Your agent then asks what to build, for example a weekly AI briefing:
 > Use azure-functions-hosted-skills to create a weekly Microsoft AI briefing.
 > Every Monday at 08:00 JST, summarize Microsoft AI news from the past seven days
 > using official Microsoft sources, include source links, and post it to an

@@ -328,7 +328,9 @@ test('bootstrap handoff uses reported readiness and missing tools without claimi
   assert.match(prompt, /do not force, choose a different\s+target, retry automatically/i);
   assert.match(prompt, /do not install Node or other tools automatically/i);
   assert.match(prompt, /Hosted Skills setup complete!/);
-  assert.match(prompt, /go straight to the next-step prompt/);
+  assert.match(prompt, /go straight to the intent question/);
+  assert.match(prompt, /ask one question: what the user wants to build/);
+  assert.match(prompt, /let that skill own planning, clarifying questions,\s+approvals, and implementation/);
   assert.match(prompt, /Do not open azure-functions-hosted-skills-canvas unless the user explicitly asks/);
   assert.match(prompt, /all six repository skills/);
   assert.match(prompt, /Migration still requires an explicit use request/);
