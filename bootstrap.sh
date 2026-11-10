@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 
-destination=./my-hosted-skill
+destination=.
 agent=
 check=false
 json=false

@@ -36,8 +36,9 @@ Or migrate an existing automation (example):
 ### Method 2: Run a one-liner
 
 Create a **new app with its template applied**, without Node or development MCP.
-Choose your agent and OS. Commands use **latest main** and create `my-hosted-skill`.
-Open it in your agent. No tools are installed; nothing is deployed.
+Run in your intended app directory, then choose your agent and OS.
+Commands use **latest main** and apply files directly to the **current directory**.
+No tools are installed; nothing is deployed.
 
 <details>
 <summary>GitHub Copilot</summary>
@@ -45,13 +46,13 @@ Open it in your agent. No tools are installed; nothing is deployed.
 **Windows (PowerShell)**
 
 ```powershell
-& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.ps1'))) -Destination .\my-hosted-skill -Agent copilot
+& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.ps1'))) -Agent copilot
 ```
 
 **macOS / Linux**
 
 ```sh
-(set -eu; installer=$(mktemp); trap 'rm -f "$installer"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.sh' -o "$installer"; sh "$installer" --destination ./my-hosted-skill --agent copilot)
+(set -eu; installer=$(mktemp); trap 'rm -f "$installer"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.sh' -o "$installer"; sh "$installer" --agent copilot)
 ```
 
 </details>
@@ -62,13 +63,13 @@ Open it in your agent. No tools are installed; nothing is deployed.
 **Windows (PowerShell)**
 
 ```powershell
-& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.ps1'))) -Destination .\my-hosted-skill -Agent claude
+& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.ps1'))) -Agent claude
 ```
 
 **macOS / Linux**
 
 ```sh
-(set -eu; installer=$(mktemp); trap 'rm -f "$installer"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.sh' -o "$installer"; sh "$installer" --destination ./my-hosted-skill --agent claude)
+(set -eu; installer=$(mktemp); trap 'rm -f "$installer"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.sh' -o "$installer"; sh "$installer" --agent claude)
 ```
 
 </details>
@@ -79,13 +80,13 @@ Open it in your agent. No tools are installed; nothing is deployed.
 **Windows (PowerShell)**
 
 ```powershell
-& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.ps1'))) -Destination .\my-hosted-skill -Agent codex
+& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.ps1'))) -Agent codex
 ```
 
 **macOS / Linux**
 
 ```sh
-(set -eu; installer=$(mktemp); trap 'rm -f "$installer"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.sh' -o "$installer"; sh "$installer" --destination ./my-hosted-skill --agent codex)
+(set -eu; installer=$(mktemp); trap 'rm -f "$installer"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.sh' -o "$installer"; sh "$installer" --agent codex)
 ```
 
 </details>

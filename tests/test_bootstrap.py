@@ -39,27 +39,60 @@ class BootstrapContract:
             shutil.copyfile(ROOT / name, self.source / name)
         self.target = self.base / "my app \u65e5\u672c\u8a9e"
 
-    def run_bootstrap(self, *arguments, agent="all", destination=None):
+    def run_bootstrap(self, *arguments, agent="all", destination=None,
+                      use_default_destination=False):
         target = destination or self.target
         if self.engine == "sh":
             translated = {"-Check": "--check"}
-            args = [self.executable, shell_path(self.source / "bootstrap.sh"),
-                    "--destination", shell_path(target), "--json"]
+            args = [self.executable, shell_path(self.source / "bootstrap.sh"), "--json"]
+            if not use_default_destination:
+                args.extend(["--destination", shell_path(target)])
             if agent is not None:
                 args.extend(["--agent", agent])
             args.extend(translated.get(arg, arg) for arg in arguments)
         else:
             args = [self.executable, "-NoProfile", "-NonInteractive", "-File",
-                    str(self.source / "bootstrap.ps1"), "-Destination", str(target),
-                    "-Json", *arguments]
+                    str(self.source / "bootstrap.ps1"), "-Json", *arguments]
+            if not use_default_destination:
+                args.extend(["-Destination", str(target)])
             if agent is not None:
                 args.extend(["-Agent", agent])
         return subprocess.run(args, capture_output=True, text=True, encoding="utf-8",
-                              timeout=60, cwd=ROOT)
+                              timeout=60, cwd=target if use_default_destination else ROOT)
+
+    def test_default_destination_is_current_directory(self):
+        self.target.mkdir()
+        unrelated = self.target / "keep.txt"
+        unrelated.write_text("keep this file")
+        inspection = self.report(
+            self.run_bootstrap("-Check", use_default_destination=True), expected=1)
+        self.assertFalse(inspection["authorReady"])
+        self.assertEqual(list(self.target.iterdir()), [unrelated])
+        report = self.report(self.run_bootstrap(use_default_destination=True))
+        self.assert_current_directory(report["destination"])
+        self.assertTrue(report["authorReady"])
+        self.assertTrue((self.target / "src" / "function_app.py").is_file())
+        self.assertFalse((self.target / "my-hosted-skill").exists())
+        self.assertEqual(unrelated.read_text(), "keep this file")
+        again = self.report(self.run_bootstrap(use_default_destination=True))
+        self.assertEqual(again["filesCreated"], 0)
+        app = self.target / "src" / "function_app.py"
+        app.write_text("# user changes\n")
+        self.assertEqual(self.run_bootstrap(use_default_destination=True).returncode, 2)
+        self.assertEqual(app.read_text(), "# user changes\n")
 
     def report(self, process, expected=0):
         self.assertEqual(process.returncode, expected, process.stdout + process.stderr)
         return json.loads(process.stdout)
+
+    def assert_current_directory(self, destination):
+        if self.engine == "sh" and os.name == "nt":
+            physical_path = subprocess.check_output(
+                [self.executable, "-c", "pwd -P"], cwd=self.target,
+                text=True, encoding="utf-8", timeout=10).strip()
+            self.assertEqual(destination, physical_path)
+        else:
+            self.assertTrue(self.target.samefile(destination), destination)
 
     def test_apply_and_rerun_are_byte_identical(self):
         first = self.report(self.run_bootstrap())
@@ -254,7 +287,8 @@ class BootstrapContract:
                 self.assertEqual(self.run_bootstrap(destination=target).returncode, 2)
                 self.assertEqual((target / "azure.yaml").read_text(), "preserve this edit")
 
-    def run_offline_installer(self, ref=PIN, response=PIN, fail_lookup=False, agent="codex"):
+    def run_offline_installer(self, ref=PIN, response=PIN, fail_lookup=False, agent="codex",
+                              use_default_destination=False):
         folder = f"azure-functions-hosted-skills-starter-{PIN}"
         environment = os.environ.copy()
         requests = self.base / "requests.log"
@@ -291,7 +325,9 @@ class BootstrapContract:
                 args.extend(["--ref", ref])
             if agent is not None:
                 args.extend(["--agent", agent])
-            args.extend(["--destination", shell_path(self.target), "--json"])
+            if not use_default_destination:
+                args.extend(["--destination", shell_path(self.target)])
+            args.append("--json")
         else:
             archive = self.base / "starter.zip"
             with zipfile.ZipFile(archive, "w") as package:
@@ -312,12 +348,29 @@ class BootstrapContract:
                 "& $env:TEST_INSTALLER "
                 + (f"-Ref '{ref}' " if ref is not None else "")
                 + (f"-Agent '{agent}' " if agent is not None else "")
-                + "-Destination $env:TEST_DESTINATION -Json; exit $LASTEXITCODE"
+                + ("" if use_default_destination else "-Destination $env:TEST_DESTINATION ")
+                + "-Json; exit $LASTEXITCODE"
             )
             args = [self.executable, "-NoProfile", "-NonInteractive", "-Command", script]
         process = subprocess.run(args, capture_output=True, text=True, encoding="utf-8",
-                                 timeout=60, env=environment, cwd=ROOT)
+                                 timeout=60, env=environment,
+                                 cwd=self.target if use_default_destination else ROOT)
         return process, requests.read_text() if requests.exists() else ""
+
+    def test_remote_default_destination_is_current_directory(self):
+        self.target.mkdir()
+        unrelated = self.target / "keep.txt"
+        unrelated.write_text("keep this file")
+        process, _ = self.run_offline_installer(use_default_destination=True)
+        report = self.report(process)
+        self.assert_current_directory(report["destination"])
+        self.assertTrue(report["authorReady"])
+        self.assertTrue((self.target / "src" / "function_app.py").is_file())
+        self.assertTrue((self.target / ".hosted-skills-bootstrap.json").is_file())
+        self.assertFalse((self.target / "my-hosted-skill").exists())
+        self.assertEqual(unrelated.read_text(), "keep this file")
+        process, _ = self.run_offline_installer(use_default_destination=True)
+        self.assertEqual(self.report(process)["filesCreated"], 0)
 
     def test_remote_installer_with_offline_download(self):
         """Pinned versions bypass lookup, and preserve the archive SHA."""

@@ -7,7 +7,14 @@ route per workspace to avoid duplicate installations.
 
 ## Two ways to try it
 
-From a checkout or extracted archive, select your agent (Copilot shown):
+Run in the intended app directory. All four entrypoints default to the current
+directory, without creating a `my-hosted-skill` subdirectory. Specify
+`-Destination <path>` / `--destination <path>` only to choose a different location.
+Existing conflicting files still stop the entire apply before any writes.
+
+When running from the starter checkout or extracted archive itself, explicitly
+select a separate app destination (Copilot shown); applying over the starter
+distribution remains prohibited:
 
 ```powershell
 .\bootstrap.ps1 -Destination .\my-hosted-skill -Agent copilot
@@ -20,7 +27,7 @@ sh ./bootstrap.sh --destination ./my-hosted-skill --agent copilot
 Or ask the coding agent:
 
 > Follow start.md's fast bootstrap path to create a new app with the cached
-> template at my-hosted-skill. Use the same bootstrap as the terminal route.
+> template in the current directory. Use the same bootstrap as the terminal route.
 > Do not install tools, run the app, or deploy.
 
 Both entrypoints apply the same cache and prerequisite checks. Open the reported
@@ -88,11 +95,11 @@ there is no fallback to another version. No GitHub token is required.
 After this PR is merged, use these one-liners (Copilot shown):
 
 ```powershell
-& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.ps1'))) -Destination .\my-hosted-skill -Agent copilot
+& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.ps1'))) -Destination . -Agent copilot
 ```
 
 ```sh
-(set -eu; installer=$(mktemp); trap 'rm -f "$installer"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.sh' -o "$installer"; sh "$installer" --destination ./my-hosted-skill --agent copilot)
+(set -eu; installer=$(mktemp); trap 'rm -f "$installer"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.sh' -o "$installer"; sh "$installer" --destination . --agent copilot)
 ```
 
 Change `copilot` to `claude` or `codex`, or omit the agent argument to select it

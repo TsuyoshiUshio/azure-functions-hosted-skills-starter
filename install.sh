@@ -2,7 +2,7 @@
 set -eu
 
 ref=main
-destination=./my-hosted-skill
+destination=.
 agent=
 json=false
 fail() { printf 'Download/bootstrap failed: %s\n' "$*" >&2; exit 2; }

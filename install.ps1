@@ -2,7 +2,7 @@
 param(
     [ValidatePattern('^(main|[0-9a-f]{40})$')]
     [string]$Ref = 'main',
-    [string]$Destination = (Join-Path (Get-Location) 'my-hosted-skill'),
+    [string]$Destination = (Get-Location).Path,
     [string]$Agent,
     [switch]$Json
 )
