@@ -1,6 +1,6 @@
 # Fast bootstrap with a cached application template
 
-This optional path creates a **new app**, rather than installing the existing
+This default onboarding path creates a **new app**, rather than installing the existing
 six-skill workspace/plugin integration. It copies one upstream authoring skill,
 the official sample application, and thin coding-agent instructions. Use one
 route per workspace to avoid duplicate installations.
@@ -26,7 +26,7 @@ sh ./bootstrap.sh --destination ./my-hosted-skill --agent copilot
 
 Or ask the coding agent:
 
-> Follow start.md's fast bootstrap path to create a new app with the cached
+> Follow start.md to create a new app with the cached
 > template in the current directory. Use the same bootstrap as the terminal route.
 > Do not install tools, run the app, or deploy.
 
@@ -35,8 +35,11 @@ destination in the agent after setup and describe what you want to build.
 Choose `copilot`, `claude`, or `codex` to match your coding agent. Omit the
 agent argument for an interactive selection; `all` is an explicit opt-in for
 multiple agents, never the default. With `-Json` / `--json`, specify the agent
-so automation cannot wait on a prompt. `start.md` uses the actual running agent
-and asks only when unknown.
+so automation cannot wait on a prompt. `start.md` selects the OS and actual
+running agent from the supplied execution context, executes the matching remote
+one-liner once with JSON output, and uses that result for missing-tool guidance
+and an immediate authoring handoff. No separate prerequisite scan, source
+checkout, MCP discovery, or manual file application is needed.
 
 | Selection | Skill root | Instructions |
 | --- | --- | --- |
@@ -92,14 +95,14 @@ are recorded in `.hosted-skills-bootstrap.json` and the `starterSource` report.
 Lookup failures, invalid responses and API rate limits stop installation;
 there is no fallback to another version. No GitHub token is required.
 
-After this PR is merged, use these one-liners (Copilot shown):
+Run these one-liners in the intended app directory (Copilot shown):
 
 ```powershell
-& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.ps1'))) -Destination . -Agent copilot
+& ([scriptblock]::Create((Invoke-RestMethod 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.ps1'))) -Agent copilot
 ```
 
 ```sh
-(set -eu; installer=$(mktemp); trap 'rm -f "$installer"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.sh' -o "$installer"; sh "$installer" --destination . --agent copilot)
+(set -eu; installer=$(mktemp); trap 'rm -f "$installer"' EXIT; curl -fsSL --proto '=https' --proto-redir '=https' 'https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/install.sh' -o "$installer"; sh "$installer" --agent copilot)
 ```
 
 Change `copilot` to `claude` or `codex`, or omit the agent argument to select it

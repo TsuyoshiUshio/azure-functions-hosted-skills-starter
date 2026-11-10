@@ -286,23 +286,65 @@ test('actual CLI setup binds preview/apply and keeps telemetry disabled without 
   assert.equal(existsSync(join(directory, 'node_modules')), false);
 });
 
-test('bootstrap prompt is shell-friendly and keeps setup distinct from app/cloud operations', () => {
+test('start.md selects OS and agent once and delegates to README installers with JSON', () => {
   const prompt = read(root, 'start.md');
-  assert.equal(prompt.includes('"'), false);
-  assert.match(prompt, /preview.*approved/is);
-  assert.match(prompt, /--expect-plan/);
+  const snippets = [...prompt.matchAll(/```(\w+)\n([^\n]+)\n```/g)];
+  assert.deepEqual(snippets.map(([, language]) => language), ['powershell', 'sh']);
+  const readme = read(root, 'README.md');
+  const oneLiners = readme.slice(readme.indexOf('### Method 2:'), readme.indexOf('### Method 3:'));
+  const entries = [...oneLiners.matchAll(/<details>\s*<summary>([^<]+)<\/summary>([\s\S]*?)<\/details>/g)];
+  for (const [index, [, , content]] of entries.entries()) {
+    const agent = ['copilot', 'claude', 'codex'][index];
+    const commands = [...content.matchAll(/```(\w+)\n([^\n]+)\n```/g)];
+    assert.equal(snippets[0][2].replace('-Agent copilot -Json', `-Agent ${agent}`), commands[0][2]);
+    assert.equal(snippets[1][2].replace('--agent copilot --json)', `--agent ${agent})`), commands[1][2]);
+  }
+  assert.match(prompt, /Windows, macOS, or Linux/);
+  assert.match(prompt, /execution host, not the desktop OS/);
+  assert.match(prompt, /execution context already supplied/);
+  assert.match(prompt, /one native OS query/);
+  assert.match(prompt, /Run exactly one matching command with JSON output/);
+  assert.match(prompt, /Do not first\s+clone the repository/);
+  assert.match(prompt, /not another inspection loop/);
+  assert.doesNotMatch(snippets.map(([, , code]) => code).join('\n'), /-Destination|--destination|setup\.mjs|git clone/);
+  assert.doesNotMatch(prompt, /--expect-plan/);
+  assert.match(prompt, /workspace setup without an app\s+template/);
+  assert.match(prompt, /docs\/setup\.md#agent-led-workspace-integration/);
+});
+
+test('bootstrap handoff uses reported readiness and missing tools without claiming runtime validation', () => {
+  const prompt = read(root, 'start.md');
+  for (const field of ['authorReady', 'destination', 'agent', 'starterSource', 'toolsDetected',
+    'localRun', 'deployment', 'python3', 'python', 'func', 'azurite', 'azd', 'az']) {
+    assert.ok(prompt.includes(`\`${field}\``), field);
+  }
+  assert.match(prompt, /nonzero exit, invalid\/missing JSON/);
+  assert.match(prompt, /Read stderr too/);
+  assert.match(prompt, /Both `python3` and `python` are false/);
+  assert.match(prompt, /selected OS/);
+  assert.match(prompt, /CLI absence does not rule out an existing container/);
+  assert.match(prompt, /Missing optional tools do not undo Author-ready/);
+  assert.match(prompt, /not version, service, credential, or model\s+validation/);
+  assert.match(prompt, /do not force, choose a different\s+target, retry automatically/i);
   assert.match(prompt, /do not install Node or other tools automatically/i);
-  assert.match(prompt, /continue with agent-led setup/i);
-  assert.match(prompt, /Definition of done/);
-  assert.match(prompt, /merge or intentional replacement/);
-  assert.match(prompt, /Temporary downloads.*cleaned/is);
   assert.match(prompt, /Hosted Skills setup complete!/);
-  assert.match(prompt, /azure-functions-hosted-skills-migrate/);
-  assert.match(prompt, /do not invoke another plugin's azure-functions-hosted-skills skill/i);
+  assert.match(prompt, /go straight to the next-step prompt/);
   assert.match(prompt, /Do not open azure-functions-hosted-skills-canvas unless the user explicitly asks/);
-  assert.match(prompt, /Do not ask a telemetry-choice\s+question/);
-  assert.doesNotMatch(prompt, /Briefly disclose that\s+telemetry is optional/);
-  assert.match(prompt, /do not modify installer internals to omit MCP/);
+  assert.match(prompt, /do not claim this one-skill bootstrap installed them/);
+});
+
+test('explicit workspace-only integration retains its reviewed merge and verification contract', () => {
+  const guide = read(root, 'docs/setup.md');
+  assert.match(guide, /Agent-led workspace integration/);
+  assert.match(guide, /preview.*approved/is);
+  assert.match(guide, /--expect-plan/);
+  assert.match(guide, /continue with agent-led setup/i);
+  assert.match(guide, /Definition of done/);
+  assert.match(guide, /merge or intentional replacement/);
+  assert.match(guide, /Temporary downloads.*cleaned/is);
+  assert.match(guide, /Do not ask a telemetry-choice\s+question/);
+  assert.match(guide, /do not modify installer internals to omit MCP/);
+  assert.match(read(root, 'docs/agent-setup.md'), /Definition of done in `docs\/setup.md`/);
 });
 
 test('agent-led blueprints match a fresh scripted install for every host', t => {
@@ -333,7 +375,8 @@ test('staging distribution references and packaged guidance use the current sour
   assert.match(read(root, 'plugin/AGENTS.md'), /`skills\/azure-functions-hosted-skills\/SKILL.md`/);
   assert.equal(read(root, 'plugin/CLAUDE.md'), '@AGENTS.md\n');
   const readme = read(root, 'README.md');
-  assert.match(readme, /This is workspace setup, not app creation\. Do not open a Canvas\./);
+  assert.match(readme, /with the cached template in this directory/);
+  assert.match(readme, /Use the one-liner for your OS and coding agent\. Do not open a Canvas\./);
   assert.ok(read(root, 'docs/development.md').includes(`${repository}/issues/1`));
 });
 
@@ -343,7 +386,7 @@ test('customer README stays brief and links the supplied banner and focused guid
   assert.ok(readme.split(/\s+/).length <= 600);
   const shortcut = readme.indexOf('https://aka.ms/hosted-skills-starter ');
   assert.ok(shortcut >= 0 && shortcut < readme.indexOf('### Method 2:'));
-  assert.match(readme, /Node.js is optional/);
+  assert.match(readme, /No Node.js required for bootstrap/);
   assert.match(readme, /azure-functions-hosted-skills-migrate/);
   const sections = ['## Getting started', '### Method 1:', '### Method 2:', '### Method 3:', '## Developer guide',
     '<summary>Disable telemetry</summary>'].map(text => readme.indexOf(text));
@@ -393,12 +436,13 @@ test('README provides one-copy latest-main commands for each agent and OS', () =
   assert.ok(oneLiners.includes('docs/bootstrap.md'));
 });
 
-test('README, agent handoff, and terminal launchers share concrete creation and migration prompts', () => {
+test('bootstrap hands off to creation while workspace launchers also offer migration', () => {
   const examples = text => [...text.matchAll(/^> (.+(?:\n> .+)*)/gm)]
     .map(match => match[1].replace(/\n> /g, ' '));
   const prompts = examples(read(root, 'README.md'));
   assert.equal(prompts.length, 2);
-  assert.deepEqual(examples(read(root, 'start.md')), prompts);
+  assert.deepEqual(examples(read(root, 'start.md')), [prompts[0]]);
+  assert.match(read(root, 'README.md'), /With the workspace integration or plugin, migrate/);
   assert.match(prompts[0], /Every Monday at 08:00 JST/);
   assert.match(prompts[0], /past seven days/);
   assert.match(prompts[0], /official Microsoft sources, include source links/);
