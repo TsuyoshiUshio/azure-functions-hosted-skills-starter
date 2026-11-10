@@ -1,5 +1,21 @@
 # Set up Azure Functions Hosted Skills
 
+## Fast path: a new application with its template
+
+When the user explicitly requests a **new app with the cached template** or the
+**fast bootstrap**, use the deterministic route in [docs/bootstrap.md](docs/bootstrap.md)
+before environment discovery or manual file generation. Run `bootstrap.ps1` or
+`bootstrap.sh` once with the approved new destination and selected agent (or
+`all` if unknown), adding `-Json` / `--json`. Check the exit code and `authorReady`.
+On a conflict, preserve files and stop; never force an overwrite or choose a
+different destination silently. Read the generated `AGENTS.md` and installed
+skill before continuing with app authoring. Local runs and deployment remain
+separately approved operations. This route installs one authoring skill and a
+sample app, not the six-skill workspace/plugin integration described below.
+Do not install both routes in the same workspace.
+
+For workspace setup **without app creation**, preserve the existing flow below.
+
 Help the user get ready to build Hosted Skills in their workspace. Keep setup
 moving: Node.js is an optional shortcut, not a prerequisite for agent-led setup.
 Do not install Node or other tools automatically to make a setup script run.

@@ -14,6 +14,13 @@ same-named Hosted Skills skill to perform it. Open
 azure-functions-hosted-skills-canvas only when the user explicitly asks to open
 that canvas; a Hosted Skills or scheduled-agent request alone is not consent.
 
+For an explicitly requested new app with the cached template/fast bootstrap,
+use `start.md`'s fast path and `docs/bootstrap.md` instead. This optional route
+applies a pinned sample and one cached authoring skill to a new destination,
+without Node or MCP; it does not install the six-skill workspace integration.
+Do not install both routes in one workspace. Maintain the cache independently
+of `skills.lock.json`; preserve its byte hashes and upstream licenses.
+
 Canonical skills live in `plugin/skills`; the local updater source is
 `skills/skills-update/SKILL.md`. Read these local SKILL.md files rather than
 resolving same-named skills through another installed plugin.

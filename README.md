@@ -2,8 +2,7 @@
 
 ![Azure Functions connected to skills and services in the cloud](docs/images/hosted-skills-banner.png)
 
-Turn an idea, automation, or existing skill into an event-driven AI capability
-on Azure Functions, with your coding agent.
+Turn an idea, automation, or existing skill into an event-driven AI capability on Azure Functions, with your coding agent.
 
 Works with **GitHub Copilot, Claude Code, and Codex**.
 
@@ -23,14 +22,12 @@ Your agent reviews existing files and sets up only what it needs.
 **Node.js is optional for agent-led setup.** Nothing is deployed to Azure.
 
 Then build a weekly AI briefing:
-
 > Use azure-functions-hosted-skills to create a weekly Microsoft AI briefing.
 > Every Monday at 08:00 JST, summarize Microsoft AI news from the past seven days
 > using official Microsoft sources, include source links, and post it to an
 > existing Teams thread. Show a plan first; do not deploy or send messages yet.
 
 Or migrate an existing automation (example):
-
 > Use azure-functions-hosted-skills-migrate to migrate my GitHub Actions workflow
 > at `.github/workflows/weekly-releases.yml`: every Friday at 09:00 JST, it reads
 > new GitHub releases and posts a Teams digest. Preserve its repository list,
@@ -77,6 +74,8 @@ codex plugin add hosted-skills-starter@hosted-skills-starter
 
 Prefer a script? See [PowerShell or Bash one-line setup](docs/setup.md#one-line-terminal-setup).
 It previews changes and asks before applying. Without Node.js, use agent-led setup above.
+
+Want a **new app with its template applied**, without Node or MCP? Use [fast bootstrap](docs/bootstrap.md), by one-liner or `start.md`'s fast path.
 
 ## Developer guide
 
