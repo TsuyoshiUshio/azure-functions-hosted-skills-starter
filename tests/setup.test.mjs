@@ -330,10 +330,11 @@ test('bootstrap handoff uses reported readiness and missing tools without claimi
   assert.match(prompt, /Hosted Skills setup complete!/);
   assert.match(prompt, /go straight to the intent question/);
   assert.match(prompt, /ask one question: what the user wants to build/);
-  assert.match(prompt, /let that skill own planning, clarifying questions,\s+approvals, and implementation/);
+  assert.match(prompt, /let\s+that skill own planning, clarifying questions, approvals, and implementation/);
   assert.match(prompt, /Do not open azure-functions-hosted-skills-canvas unless the user explicitly asks/);
   assert.match(prompt, /all six repository skills/);
-  assert.match(prompt, /Migration still requires an explicit use request/);
+  assert.match(prompt, /It runs only when the user names it and asks to use it/);
+  assert.match(prompt, /Migrating an existing skill, agent, or automation:\*\* use\s+`azure-functions-hosted-skills-migrate`/);
   assert.match(prompt, /no second installation or discovery scan/);
   assert.match(prompt, /Fresh setup enables.*telemetry hooks without a choice question/);
   assert.match(prompt, /explicit disable request.*`-NoTelemetry`/);
@@ -448,7 +449,7 @@ test('bootstrap hands off to creation while workspace launchers also offer migra
     .map(match => match[1].replace(/\n> /g, ' '));
   const prompts = examples(read(root, 'README.md'));
   assert.equal(prompts.length, 2);
-  assert.deepEqual(examples(read(root, 'start.md')), [prompts[0]]);
+  assert.deepEqual(examples(read(root, 'start.md')), prompts);
   assert.match(read(root, 'README.md'), /Or explicitly request migration/);
   assert.match(prompts[0], /Every Monday at 08:00 JST/);
   assert.match(prompts[0], /past seven days/);
