@@ -2,6 +2,7 @@
 param(
     [string]$Destination = (Get-Location).Path,
     [string]$Agent,
+    [switch]$NoTelemetry,
     [switch]$Check,
     [switch]$Json
 )
@@ -80,11 +81,13 @@ try {
         throw 'Choose a destination outside the starter root, its ancestors, and cache.'
     }
     $entries = @()
+    $skills = @()
+    $telemetryEnabled = -not $NoTelemetry
     $destinations = @{}
     $conflicts = @()
     foreach ($line in [IO.File]::ReadAllLines($manifest)) {
         $fields = $line.Split("`t")
-        if ($fields.Count -ne 4 -or $fields[0] -notin @('common', 'agents', 'copilot', 'claude', 'codex') -or
+        if ($fields.Count -ne 4 -or $fields[0] -notin @('common', 'agents', 'copilot', 'claude', 'codex', 'preference-on', 'preference-off') -or
             $fields[1] -cnotmatch '^[0-9a-f]{64}$') {
             throw 'Invalid cache manifest row.'
         }
@@ -93,6 +96,8 @@ try {
         Assert-SafePath $relativeTarget
         $selected = $scope -eq 'common' -or $Agent -eq 'all' -or $scope -eq $Agent -or
             ($scope -eq 'agents' -and $Agent -in @('copilot', 'codex'))
+        if ($scope -eq 'preference-on') { $selected = -not $NoTelemetry }
+        if ($scope -eq 'preference-off') { $selected = [bool]$NoTelemetry }
         if (-not $selected) { continue }
         if ($destinations.ContainsKey($relativeTarget)) {
             throw "Duplicate destination in manifest: $relativeTarget"
@@ -106,8 +111,26 @@ try {
             (Get-Digest $source) -ne $digest) {
             throw "Cache integrity check failed: $relativeSource"
         }
+        if ($relativeTarget -cmatch '^\.(agents|claude)/skills/([^/]+)/SKILL\.md$' -and
+            $Matches[2] -notin $skills) {
+            $skills += $Matches[2]
+        }
         $exists = $null -ne (Get-PathAttributes $output)
-        if ($exists -and (-not [IO.File]::Exists($output) -or
+        if ($scope -in @('preference-on', 'preference-off')) {
+            if ($relativeTarget -cne '.hosted-skills-starter/telemetry.config.json') {
+                throw 'Invalid telemetry preference destination.'
+            }
+            if ($exists) {
+                if (-not [IO.File]::Exists($output) -or
+                    [Text.Encoding]::UTF8.GetString([IO.File]::ReadAllBytes($output)) -cnotmatch '\A[ \t\r\n]*\{[ \t\r\n]*"enabled"[ \t\r\n]*:[ \t\r\n]*(true|false)[ \t\r\n]*\}[ \t\r\n]*\z') {
+                    throw 'Invalid existing telemetry preference; preserve it and reconcile before retrying.'
+                }
+                $telemetryEnabled = $Matches[1] -eq 'true'
+                if ($NoTelemetry -and $telemetryEnabled) {
+                    throw 'Existing telemetry preference is enabled; review changing it to enabled: false before retrying -NoTelemetry.'
+                }
+            }
+        } elseif ($exists -and (-not [IO.File]::Exists($output) -or
             (Get-Digest $output) -ne $digest)) {
             $conflicts += $relativeTarget
         }
@@ -130,7 +153,7 @@ try {
         }
     }
     $detected = [ordered]@{}
-    foreach ($tool in @('python3', 'python', 'func', 'azurite', 'azd', 'az')) {
+    foreach ($tool in @('python3', 'python', 'func', 'azurite', 'azd', 'az', 'node')) {
         $detected[$tool] = $null -ne (Get-Command $tool -CommandType Application -ErrorAction SilentlyContinue)
     }
     $ready = -not $Check -or $missing.Count -eq 0
@@ -139,6 +162,7 @@ try {
         mode = $(if ($Check) { 'check' } else { 'apply' })
         destination = $target
         agent = $Agent
+        skills = @($skills)
         templateSource = 'repository-cache'
         starterSource = $(if ([IO.File]::Exists([IO.Path]::Combine($cache, 'installer-source.json'))) {
             [IO.File]::ReadAllText([IO.Path]::Combine($cache, 'installer-source.json')) | ConvertFrom-Json
@@ -148,6 +172,7 @@ try {
         filesCreated = $(if ($Check) { 0 } else { $missing.Count })
         filesMissing = $(if ($Check) { $missing.Count } else { 0 })
         toolsDetected = $detected
+        telemetry = [ordered]@{ preferenceEnabled = $telemetryEnabled; runtime = 'not-verified' }
         localRun = 'not-verified'
         deployment = 'not-verified'
     }
@@ -160,6 +185,7 @@ try {
         if ($null -ne $report.starterSource) { Write-Output "Starter commit: $($report.starterSource.commit)" }
         Write-Output 'Optional tools on PATH (presence only; versions, services and authentication not verified):'
         foreach ($tool in $detected.Keys) { Write-Output "  ${tool}: $($detected[$tool])" }
+        Write-Output "Telemetry preference enabled: $telemetryEnabled; hook execution and delivery: not verified."
         Write-Output 'Local run and deployment: not verified. No tools installed, services started or Azure resources created.'
         if ($ready) { Write-Output 'Open the destination in your coding agent and describe the Hosted Skill you want to build.' }
     }

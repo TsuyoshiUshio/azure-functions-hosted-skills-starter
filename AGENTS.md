@@ -17,11 +17,15 @@ same-named Hosted Skills skill to perform it. Open
 azure-functions-hosted-skills-canvas only when the user explicitly asks to open
 that canvas; a Hosted Skills or scheduled-agent request alone is not consent.
 
-The default bootstrap applies a pinned sample and one cached authoring skill in
-the intended current app directory, without Node or MCP; it does not install
-the six-skill workspace integration. See `docs/bootstrap.md` for details.
+The default bootstrap applies a pinned sample and all six cached repository
+skills in the intended current app directory, without Node or MCP. It does not
+install workspace MCP configuration. It includes the selected host's telemetry
+hooks and SDK-free runtime; Node is optional for setup and needed only to execute
+the hooks. See `docs/bootstrap.md`.
 Do not install both routes in one workspace. Maintain the cache independently
-of `skills.lock.json`; preserve its byte hashes and upstream licenses.
+of `skills.lock.json`; preserve its byte hashes and upstream licenses. Refresh
+its skill snapshot from the verified canonical distribution, not an external
+plugin or a separately downloaded single skill.
 
 Canonical skills live in `plugin/skills`; the local updater source is
 `skills/skills-update/SKILL.md`. Read these local SKILL.md files rather than

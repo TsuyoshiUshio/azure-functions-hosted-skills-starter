@@ -2,7 +2,7 @@
 
 ![Azure Functions connected to skills and services in the cloud](docs/images/hosted-skills-banner.png)
 
-Turn an idea, automation, or existing skill into an event-driven AI capability on Azure Functions, with your coding agent.
+Build event-driven AI capabilities on Azure Functions with your coding agent.
 
 Works with **GitHub Copilot, Claude Code, and Codex**.
 
@@ -27,7 +27,7 @@ Then build a weekly AI briefing:
 > using official Microsoft sources, include source links, and post it to an
 > existing Teams thread. Show a plan first; do not deploy or send messages yet.
 
-With the workspace integration or plugin, migrate an automation (example):
+Or explicitly request migration of an automation (example):
 > Use azure-functions-hosted-skills-migrate to migrate my GitHub Actions workflow
 > at `.github/workflows/weekly-releases.yml`: every Friday at 09:00 JST, it reads
 > new GitHub releases and posts a Teams digest. Preserve its repository list,
@@ -36,7 +36,9 @@ With the workspace integration or plugin, migrate an automation (example):
 ### Method 2: Run a one-liner
 
 Create a **new app with its template applied**, without Node or development MCP.
-Run in your intended app directory, then choose your agent and OS.
+Includes all six repository skills with their references and assets.
+Telemetry hooks are enabled by default; Node is needed only for hook execution.
+Run in your app directory using your agent/OS command.
 Commands use **latest main** and apply files directly to the **current directory**.
 No tools are installed; nothing is deployed.
 
@@ -99,11 +101,11 @@ Use one setup method per workspace.
 
 ### Method 3: Install a plugin
 
-Choose your agent. Use either plugin installation or workspace setup, not both.
+Choose your agent; do not combine plugin and workspace installation.
 
 <sub>This starter bundles the Hosted Skills-related subset of
 [azure-functions-skills](https://github.com/Azure/azure-functions-skills).
-If you already have that plugin installed, you can use its Hosted Skills authoring and migration features without installing this subset again.</sub>
+An existing upstream installation provides Hosted Skills authoring and migration without installing this subset again.</sub>
 
 <details>
 <summary>GitHub Copilot CLI</summary>
@@ -142,6 +144,7 @@ For contributions, architecture, and skill updates, see the [developer guide](do
 <summary>Disable telemetry</summary>
 
 Tell your agent: **Set up Hosted Skills with telemetry disabled.**
+New apps: append `-NoTelemetry` (PowerShell) or `--no-telemetry` (shell).
 
 For an existing installation, set `enabled` to `false` in
 `.hosted-skills-starter/telemetry.config.json`, or set

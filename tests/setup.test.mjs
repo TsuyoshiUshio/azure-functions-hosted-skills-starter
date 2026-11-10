@@ -314,8 +314,8 @@ test('start.md selects OS and agent once and delegates to README installers with
 
 test('bootstrap handoff uses reported readiness and missing tools without claiming runtime validation', () => {
   const prompt = read(root, 'start.md');
-  for (const field of ['authorReady', 'destination', 'agent', 'starterSource', 'toolsDetected',
-    'localRun', 'deployment', 'python3', 'python', 'func', 'azurite', 'azd', 'az']) {
+  for (const field of ['authorReady', 'destination', 'agent', 'starterSource', 'skills', 'toolsDetected',
+    'localRun', 'deployment', 'python3', 'python', 'func', 'azurite', 'azd', 'az', 'node', 'telemetry']) {
     assert.ok(prompt.includes(`\`${field}\``), field);
   }
   assert.match(prompt, /nonzero exit, invalid\/missing JSON/);
@@ -330,7 +330,12 @@ test('bootstrap handoff uses reported readiness and missing tools without claimi
   assert.match(prompt, /Hosted Skills setup complete!/);
   assert.match(prompt, /go straight to the next-step prompt/);
   assert.match(prompt, /Do not open azure-functions-hosted-skills-canvas unless the user explicitly asks/);
-  assert.match(prompt, /do not claim this one-skill bootstrap installed them/);
+  assert.match(prompt, /all six repository skills/);
+  assert.match(prompt, /Migration still requires an explicit use request/);
+  assert.match(prompt, /no second installation or discovery scan/);
+  assert.match(prompt, /Fresh setup enables.*telemetry hooks without a choice question/);
+  assert.match(prompt, /explicit disable request.*`-NoTelemetry`/);
+  assert.match(prompt, /ancestor\/environment opt-outs still take precedence/);
 });
 
 test('explicit workspace-only integration retains its reviewed merge and verification contract', () => {
@@ -442,7 +447,7 @@ test('bootstrap hands off to creation while workspace launchers also offer migra
   const prompts = examples(read(root, 'README.md'));
   assert.equal(prompts.length, 2);
   assert.deepEqual(examples(read(root, 'start.md')), [prompts[0]]);
-  assert.match(read(root, 'README.md'), /With the workspace integration or plugin, migrate/);
+  assert.match(read(root, 'README.md'), /Or explicitly request migration/);
   assert.match(prompts[0], /Every Monday at 08:00 JST/);
   assert.match(prompts[0], /past seven days/);
   assert.match(prompts[0], /official Microsoft sources, include source links/);

@@ -13,6 +13,14 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 PIN = "a" * 40
+SKILLS = {
+    "azure-functions-hosted-skills",
+    "azure-functions-hosted-skills-migrate",
+    "azure-functions-connector-create",
+    "azure-functions-connector-mcp",
+    "azure-functions-connector-validate",
+    "skills-update",
+}
 
 
 def shell_path(path):
@@ -43,7 +51,7 @@ class BootstrapContract:
                       use_default_destination=False):
         target = destination or self.target
         if self.engine == "sh":
-            translated = {"-Check": "--check"}
+            translated = {"-Check": "--check", "-NoTelemetry": "--no-telemetry"}
             args = [self.executable, shell_path(self.source / "bootstrap.sh"), "--json"]
             if not use_default_destination:
                 args.extend(["--destination", shell_path(target)])
@@ -100,11 +108,17 @@ class BootstrapContract:
         self.assertEqual(first["templateSource"], "repository-cache")
         self.assertEqual(first["localRun"], "not-verified")
         self.assertEqual(first["deployment"], "not-verified")
+        self.assertEqual(first["telemetry"], {"preferenceEnabled": True, "runtime": "not-verified"})
+        self.assertIn("node", first["toolsDetected"])
         self.assertGreater(first["filesCreated"], 40)
+        self.assertEqual(set(first["skills"]), SKILLS)
+        self.assertEqual(len(first["skills"]), len(SKILLS))
         rows = (self.source / "cache" / "files.tsv").read_text().splitlines()
         expected = set()
         for row in rows:
-            _, digest, _, destination = row.split("\t")
+            scope, digest, _, destination = row.split("\t")
+            if scope == "preference-off":
+                continue
             output = self.target / destination
             expected.add(destination)
             self.assertEqual(hashlib.sha256(output.read_bytes()).hexdigest(), digest)
@@ -131,6 +145,106 @@ class BootstrapContract:
                                  agent == "copilot")
                 self.assertEqual((target / "CLAUDE.md").exists(), agent == "claude")
                 self.assertTrue((target / "AGENTS.md").exists())
+                record = json.loads((target / ".hosted-skills-skills.json").read_text())
+                self.assertEqual(set(record["source"]["names"]), SKILLS)
+                root = target / (".claude" if agent == "claude" else ".agents") / "skills"
+                self.assertEqual({path.name for path in root.iterdir() if path.is_dir()}, SKILLS)
+                for relative, digest in record["files"].items():
+                    output = root / relative
+                    self.assertEqual(hashlib.sha256(output.read_bytes()).hexdigest(),
+                                     digest, relative)
+                self.assertFalse((target / ".mcp.json").exists())
+                for host, relative in (
+                    ("copilot", ".github/hooks/hosted-skills-starter.json"),
+                    ("claude", ".claude/settings.json"),
+                    ("codex", ".codex/hooks.json"),
+                ):
+                    output = target / relative
+                    self.assertEqual(output.exists(), host == agent)
+                    if host == agent:
+                        self.assertEqual(output.read_bytes(),
+                                         (self.source / "cache" / "telemetry" / f"{host}.json").read_bytes())
+                for name in ("telemetry.mjs", "arm-deployments.mjs",
+                             "telemetry-config.json", "upstream-LICENSE"):
+                    self.assertEqual((target / ".hosted-skills-starter" / name).read_bytes(),
+                                     (self.source / "cache" / "telemetry" / name).read_bytes())
+                self.assertEqual(json.loads((target / ".hosted-skills-starter" /
+                                             "telemetry.config.json").read_text()), {"enabled": True})
+
+    def test_existing_telemetry_opt_out_is_preserved_byte_for_byte(self):
+        preference = self.target / ".hosted-skills-starter" / "telemetry.config.json"
+        preference.parent.mkdir(parents=True)
+        original = b' \r\n{ "enabled" :\r\nfalse }\r\n'
+        preference.write_bytes(original)
+        report = self.report(self.run_bootstrap(agent="claude"))
+        self.assertFalse(report["telemetry"]["preferenceEnabled"])
+        self.assertEqual(preference.read_bytes(), original)
+        inspection = self.report(self.run_bootstrap("-Check", agent="claude"))
+        self.assertTrue(inspection["authorReady"])
+        self.assertFalse(inspection["telemetry"]["preferenceEnabled"])
+        self.assertEqual(preference.read_bytes(), original)
+
+    def test_explicit_telemetry_opt_out_defaults_and_rerun(self):
+        report = self.report(self.run_bootstrap("-NoTelemetry", agent="codex"))
+        self.assertFalse(report["telemetry"]["preferenceEnabled"])
+        preference = self.target / ".hosted-skills-starter" / "telemetry.config.json"
+        self.assertEqual(json.loads(preference.read_text()), {"enabled": False})
+        again = self.report(self.run_bootstrap(agent="codex"))
+        self.assertEqual(again["filesCreated"], 0)
+        self.assertFalse(again["telemetry"]["preferenceEnabled"])
+
+    def test_invalid_or_conflicting_telemetry_preference_stops_before_writes(self):
+        preference = self.target / ".hosted-skills-starter" / "telemetry.config.json"
+        preference.parent.mkdir(parents=True)
+        for original, arguments in (
+            (b'{"enabled":"false"}', ()),
+            (b'{"enabled":true,"enabled":false}', ()),
+            (b'{invalid', ()),
+            (b'{"enabled":true}', ("-NoTelemetry",)),
+        ):
+            with self.subTest(original=original):
+                preference.write_bytes(original)
+                self.assertEqual(self.run_bootstrap(*arguments).returncode, 2)
+                self.assertEqual(preference.read_bytes(), original)
+                self.assertFalse((self.target / "src").exists())
+                self.assertFalse((self.target / ".hosted-skills-starter" / "telemetry.mjs").exists())
+
+    def test_edited_host_settings_stop_before_any_writes(self):
+        for agent, relative in (
+            ("copilot", ".github/hooks/hosted-skills-starter.json"),
+            ("claude", ".claude/settings.json"),
+            ("codex", ".codex/hooks.json"),
+        ):
+            with self.subTest(agent=agent):
+                target = self.base / agent
+                settings = target / relative
+                settings.parent.mkdir(parents=True)
+                settings.write_text('{"keep":"my hooks and settings"}\n')
+                self.assertEqual(self.run_bootstrap(agent=agent, destination=target).returncode, 2)
+                self.assertEqual(settings.read_text(), '{"keep":"my hooks and settings"}\n')
+                self.assertFalse((target / "src").exists())
+
+    def test_telemetry_cache_integrity_failure_stops_before_any_writes(self):
+        (self.source / "cache" / "telemetry" / "telemetry.mjs").write_text("unreviewed collector")
+        self.assertEqual(self.run_bootstrap().returncode, 2)
+        self.assertFalse(self.target.exists())
+
+    def test_added_skill_conflict_prevents_all_writes(self):
+        conflict = (self.target / ".agents" / "skills" /
+                    "azure-functions-connector-mcp" / "references" / "metadata-to-mcp.md")
+        conflict.parent.mkdir(parents=True)
+        conflict.write_text("preserve connector edits")
+        self.assertEqual(self.run_bootstrap(agent="copilot").returncode, 2)
+        self.assertEqual(conflict.read_text(), "preserve connector edits")
+        self.assertFalse((self.target / "src").exists())
+        self.assertFalse((self.target / ".hosted-skills-skills.json").exists())
+
+    def test_added_skill_integrity_failure_prevents_all_writes(self):
+        reference = (self.source / "cache" / "skill" / "azure-functions-hosted-skills-migrate" /
+                     "references" / "conversion-support.md")
+        reference.write_text("invalid migration reference")
+        self.assertEqual(self.run_bootstrap(agent="claude").returncode, 2)
+        self.assertFalse(self.target.exists())
 
     def test_check_is_read_only(self):
         report = self.report(self.run_bootstrap("-Check"), expected=1)
@@ -288,7 +402,7 @@ class BootstrapContract:
                 self.assertEqual((target / "azure.yaml").read_text(), "preserve this edit")
 
     def run_offline_installer(self, ref=PIN, response=PIN, fail_lookup=False, agent="codex",
-                              use_default_destination=False):
+                              use_default_destination=False, no_telemetry=False):
         folder = f"azure-functions-hosted-skills-starter-{PIN}"
         environment = os.environ.copy()
         requests = self.base / "requests.log"
@@ -328,6 +442,8 @@ class BootstrapContract:
             if not use_default_destination:
                 args.extend(["--destination", shell_path(self.target)])
             args.append("--json")
+            if no_telemetry:
+                args.append("--no-telemetry")
         else:
             archive = self.base / "starter.zip"
             with zipfile.ZipFile(archive, "w") as package:
@@ -349,6 +465,7 @@ class BootstrapContract:
                 + (f"-Ref '{ref}' " if ref is not None else "")
                 + (f"-Agent '{agent}' " if agent is not None else "")
                 + ("" if use_default_destination else "-Destination $env:TEST_DESTINATION ")
+                + ("-NoTelemetry " if no_telemetry else "")
                 + "-Json; exit $LASTEXITCODE"
             )
             args = [self.executable, "-NoProfile", "-NonInteractive", "-Command", script]
@@ -371,6 +488,12 @@ class BootstrapContract:
         self.assertEqual(unrelated.read_text(), "keep this file")
         process, _ = self.run_offline_installer(use_default_destination=True)
         self.assertEqual(self.report(process)["filesCreated"], 0)
+
+    def test_remote_installer_preserves_explicit_telemetry_opt_out(self):
+        process, _ = self.run_offline_installer(no_telemetry=True)
+        self.assertFalse(self.report(process)["telemetry"]["preferenceEnabled"])
+        preference = self.target / ".hosted-skills-starter" / "telemetry.config.json"
+        self.assertEqual(json.loads(preference.read_text()), {"enabled": False})
 
     def test_remote_installer_with_offline_download(self):
         """Pinned versions bypass lookup, and preserve the archive SHA."""

@@ -1,8 +1,9 @@
 ---
 name: azure-functions-hosted-skills
 description: "Build, scaffold, extend, deploy, and troubleshoot Azure Functions Hosted Skills: cloud-hosted, event-driven intelligent capabilities built with Markdown, natural-language instructions, declarative configuration, code, and tools. Use whenever the user asks for an Azure Functions Hosted Skill, medium-code intelligent capability, AI app on Azure Functions, intelligent app on Azure Functions, serverless agent, serverless agents, Azure Functions agent, scheduled agent, morning briefing, daily digest, timer agent, inbox summary, email or Teams briefing, background AI workflow, connector-triggered agent, HTTP/chat capability, MCP tool, webhook-style agent, or Azure Functions hosted agent. To migrate an existing workflow from skills, chat context, agents, code, or instructions, recommend azure-functions-hosted-skills-migrate; it requires an explicit use request by name and must not run automatically."
-argument-hint: 'Describe the Hosted Skill, triggers, instructions, tools, model needs, and deployment target'
+argument-hint: "Describe the Hosted Skill, triggers, instructions, tools, model needs, and deployment target"
 ---
+
 
 # Azure Functions Hosted Skills
 
