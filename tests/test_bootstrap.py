@@ -69,7 +69,7 @@ class BootstrapContract:
         self.assertFalse(inspection["authorReady"])
         self.assertEqual(list(self.target.iterdir()), [unrelated])
         report = self.report(self.run_bootstrap(use_default_destination=True))
-        self.assertEqual(report["destination"], self.current_directory_path())
+        self.assert_current_directory(report["destination"])
         self.assertTrue(report["authorReady"])
         self.assertTrue((self.target / "src" / "function_app.py").is_file())
         self.assertFalse((self.target / "my-hosted-skill").exists())
@@ -85,12 +85,14 @@ class BootstrapContract:
         self.assertEqual(process.returncode, expected, process.stdout + process.stderr)
         return json.loads(process.stdout)
 
-    def current_directory_path(self):
-        if self.engine == "sh":
-            return subprocess.check_output(
+    def assert_current_directory(self, destination):
+        if self.engine == "sh" and os.name == "nt":
+            physical_path = subprocess.check_output(
                 [self.executable, "-c", "pwd -P"], cwd=self.target,
                 text=True, encoding="utf-8", timeout=10).strip()
-        return str(self.target)
+            self.assertEqual(destination, physical_path)
+        else:
+            self.assertTrue(self.target.samefile(destination), destination)
 
     def test_apply_and_rerun_are_byte_identical(self):
         first = self.report(self.run_bootstrap())
@@ -361,7 +363,7 @@ class BootstrapContract:
         unrelated.write_text("keep this file")
         process, _ = self.run_offline_installer(use_default_destination=True)
         report = self.report(process)
-        self.assertEqual(report["destination"], self.current_directory_path())
+        self.assert_current_directory(report["destination"])
         self.assertTrue(report["authorReady"])
         self.assertTrue((self.target / "src" / "function_app.py").is_file())
         self.assertTrue((self.target / ".hosted-skills-bootstrap.json").is_file())
