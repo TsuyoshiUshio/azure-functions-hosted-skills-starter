@@ -215,5 +215,6 @@ Before release, publish all referenced files and plugin catalogs. Keep
 `https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/start.md`
 during testing, then update it to the approved production location.
 The short URL does not need a file extension: its destination serves the raw
-Markdown prompt. Recheck the redirect, raw/fallback URLs, and both onboarding
+Markdown prompt. The migration starter is linked by its raw `migrate.md` URL;
+update that URL with the production location as well. Recheck the redirect, raw/fallback URLs, and both onboarding
 paths. Keep the supplied original banner in `docs/images`.

@@ -6,6 +6,10 @@ without app creation**, or recovery for `setup.ps1` / `setup.sh`. It installs
 the six-skill integration and selected host configuration, not an app template.
 Do not install both routes in one workspace.
 
+To migrate an existing project, [migrate.md](../migrate.md) uses this route,
+applies purely additive plans without a separate approval question, and then
+hands off to `azure-functions-hosted-skills-migrate`.
+
 For agent-led setup, ask your agent to follow this document's
 [workspace integration instructions](#agent-led-workspace-integration).
 Node is optional for that route; existing files require reviewed merges.
