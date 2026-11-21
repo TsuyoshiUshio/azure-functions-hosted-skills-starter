@@ -9,7 +9,8 @@ and use its result for prerequisite guidance and the next authoring prompt.
 Do not clone, inspect locks, query MCP, or manually install assets first.
 For explicitly requested workspace-only integration without an app template,
 follow `docs/setup.md` and `docs/agent-setup.md`; Node is optional for that
-reviewed route. Preserve opt-outs and clean only owned staging. Do not install
+reviewed route. To migrate an existing project, follow `migrate.md`, which uses
+that route and then hands off to the migration skill. Preserve opt-outs and clean only owned staging. Do not install
 assets merely to maintain this distribution or duplicate an enabled installation
 of this starter. A different Azure Functions plugin is not this installation.
 Setup applies the requested baseline, not AI customization: do not invoke another plugin's

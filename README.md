@@ -33,6 +33,18 @@ Or explicitly request migration:
 > new GitHub releases and posts a Teams digest. Preserve its repository list,
 > schedule, and destination. Show a migration plan; do not deploy or send messages yet.
 
+### Migrate an existing project
+
+In that project, paste this into your coding agent:
+
+```text
+Read https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/migrate.md
+and use azure-functions-hosted-skills-migrate in this project. Do not open a Canvas.
+```
+
+It adds only the skills (no app template), asks before changing existing files,
+then asks what you want to migrate.
+
 ### Method 2: Run a one-liner
 
 Create a **new app with its template applied**, without Node or development MCP.

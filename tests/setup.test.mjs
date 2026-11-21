@@ -345,6 +345,34 @@ test('bootstrap handoff uses reported readiness and missing tools without claimi
   assert.match(prompt, /ancestor\/environment opt-outs still take precedence/);
 });
 
+test('migrate.md installs skills without a template and hands off to the local migration skill', () => {
+  const prompt = read(root, 'migrate.md');
+  assert.match(prompt, /docs\/setup\.md#agent-led-workspace-integration/);
+  assert.match(prompt, /No application template/);
+  assert.doesNotMatch(prompt, /install\.ps1|install\.sh|bootstrap\.ps1|bootstrap\.sh/);
+  assert.match(prompt, /only\s+`add`\s+actions/);
+  assert.match(prompt, /`conflicts` and `preserved` are\s+empty/);
+  assert.match(prompt, /apply that\s+plan token without a separate approval question/);
+  assert.match(prompt, /`update` or `delete`/);
+  assert.match(prompt, /ask for approval before writing/);
+  assert.match(prompt, /Reuse an enabled installation/);
+  assert.match(prompt, /fresh install \(no\s+`\.hosted-skills-starter\/install\.json` exists\)/);
+  assert.match(prompt, /an installation record already exists/);
+  assert.match(prompt, /explicitly asked to disable telemetry, first apply that opt-out to the reused\s+installation/);
+  assert.match(prompt, /Hosted Skills migration setup complete!/);
+  assert.match(prompt, /Ask one question:\*\* what the user wants to migrate/);
+  assert.match(prompt, /then call that tool with this\s+question before ending the turn/);
+  assert.match(prompt, /Do not read the migration source during setup/);
+  assert.match(prompt, /installed local\s+`azure-functions-hosted-skills-migrate`/);
+  assert.match(prompt, /copyable `Use azure-functions-hosted-skills-migrate\s+to \.\.\.` prompt/);
+  assert.match(prompt, /Do not open azure-functions-hosted-skills-canvas unless the user explicitly asks/);
+  const readme = read(root, 'README.md');
+  const section = readme.slice(readme.indexOf('### Migrate an existing project'), readme.indexOf('### Method 2:'));
+  assert.ok(section.includes('https://raw.githubusercontent.com/TsuyoshiUshio/azure-functions-hosted-skills-starter/main/migrate.md'));
+  assert.match(section, /use azure-functions-hosted-skills-migrate/);
+  assert.match(read(root, 'docs/setup.md'), /\[migrate\.md\]\(\.\.\/migrate\.md\)/);
+});
+
 test('explicit workspace-only integration retains its reviewed merge and verification contract', () => {
   const guide = read(root, 'docs/setup.md');
   assert.match(guide, /Agent-led workspace integration/);
@@ -376,7 +404,7 @@ test('agent-led blueprints match a fresh scripted install for every host', t => 
 
 test('staging distribution references and packaged guidance use the current source consistently', () => {
   const repository = 'TsuyoshiUshio/azure-functions-hosted-skills-starter';
-  for (const path of ['README.md', 'start.md', 'setup.ps1', 'setup.sh', 'docs/setup.md',
+  for (const path of ['README.md', 'start.md', 'migrate.md', 'setup.ps1', 'setup.sh', 'docs/setup.md',
     'docs/development.md', 'scripts/host-config.mjs', 'skills/skills-update/SKILL.md',
     'plugin/skills/skills-update/SKILL.md', 'plugin/.claude-plugin/plugin.json',
     'plugin/.codex-plugin/plugin.json', 'plugin/plugin.json']) {
@@ -395,7 +423,7 @@ test('staging distribution references and packaged guidance use the current sour
 test('customer README stays brief and links the supplied banner and focused guides', () => {
   const readme = read(root, 'README.md');
   assert.ok(readme.split('\n').length <= 180);
-  assert.ok(readme.split(/\s+/).length <= 600);
+  assert.ok(readme.split(/\s+/).length <= 660);
   const shortcut = readme.indexOf('https://aka.ms/hosted-skills-starter ');
   assert.ok(shortcut >= 0 && shortcut < readme.indexOf('### Method 2:'));
   assert.match(readme, /No Node.js required for bootstrap/);
